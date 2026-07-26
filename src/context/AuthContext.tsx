@@ -34,39 +34,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadStoredUser = async () => {
     setLoading(true);
     const storedToken = localStorage.getItem('aether_token');
-    const tokenToUse = storedToken || 'bypass_token';
-    setToken(tokenToUse);
+    
+    if (!storedToken) {
+      setToken(null);
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
+    setToken(storedToken);
     try {
       const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
-          Authorization: `Bearer ${tokenToUse}`,
+          Authorization: `Bearer ${storedToken}`,
         },
       });
       if (response.ok) {
         const userData = await response.json();
         setUser(userData);
       } else {
-        // Fallback if request fails
-        const fallbackUser: UserProfile = {
-          id: 'mock-id-alex',
-          name: 'Alex Rivera',
-          email: 'alex.rivera@aether.io',
-          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex%20Rivera',
-          role: 'Product Lead',
-        };
-        setUser(fallbackUser);
+        localStorage.removeItem('aether_token');
+        setToken(null);
+        setUser(null);
       }
     } catch (err) {
       console.error('Failed to load session:', err);
-      // Fallback if request fails
-      const fallbackUser: UserProfile = {
-        id: 'mock-id-alex',
-        name: 'Alex Rivera',
-        email: 'alex.rivera@aether.io',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex%20Rivera',
-        role: 'Product Lead',
-      };
-      setUser(fallbackUser);
+      setToken(null);
+      setUser(null);
     } finally {
       setLoading(false);
     }
