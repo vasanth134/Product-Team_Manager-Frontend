@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { io, Socket } from 'socket.io-client';
 import { useAuth, API_BASE_URL } from './AuthContext';
 
-const SOCKET_URL = 'http://localhost:5000';
+const SOCKET_URL = API_BASE_URL.replace('/api', '');
 
 export interface Attachment {
   type: 'image' | 'audio';

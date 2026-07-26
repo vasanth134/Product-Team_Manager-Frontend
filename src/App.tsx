@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth, API_BASE_URL } from './context/AuthContext';
 import { TeamProvider, useTeam } from './context/TeamContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthScreen } from './components/AuthScreen';

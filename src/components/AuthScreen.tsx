@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, API_BASE_URL } from '../context/AuthContext';
 import { Sparkles, Mail, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
 
 interface AuthScreenProps {
@@ -37,7 +37,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ inviteDetails }) => {
   // Load dev emails to simulate receiving email inbox
   const fetchDevEmails = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/auth/dev/emails');
+      const res = await fetch(`${API_BASE_URL}/auth/dev/emails`);
       if (res.ok) {
         const data = await res.json();
         setDevEmails(data);
