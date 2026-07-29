@@ -10,6 +10,7 @@ import { Roadmap } from './components/Roadmap';
 import { Standups } from './components/Standups';
 import { Chat } from './components/Chat';
 import { ProfileView } from './components/ProfileView';
+import { TeamSettings } from './components/TeamSettings';
 import { Sparkles, FolderKanban, Menu } from 'lucide-react';
 
 const WorkspaceContainer: React.FC = () => {
@@ -118,6 +119,8 @@ const WorkspaceContainer: React.FC = () => {
         return <Chat />;
       case 'profile':
         return <ProfileView />;
+      case 'settings':
+        return <TeamSettings />;
       default:
         return <Dashboard />;
     }

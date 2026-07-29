@@ -16,7 +16,8 @@ import {
   X,
   MessageSquare,
   Sun,
-  Moon
+  Moon,
+  Settings
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -48,12 +49,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, isO
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null);
 
+  const userMemberRecord = activeTeam?.members.find(m => m.user._id === user?.id);
+  const isTeamAdmin = userMemberRecord?.role === 'owner' || userMemberRecord?.role === 'admin';
+
   const menuItems = [
     { id: 'dashboard', name: 'Workspace Dashboard', icon: LayoutDashboard },
     { id: 'kanban', name: 'Kanban Board', icon: Trello },
     { id: 'roadmap', name: 'Product Roadmap', icon: Milestone },
     { id: 'standups', name: 'Daily Standups', icon: CalendarDays },
     { id: 'chat', name: 'Team Rooms', icon: MessageSquare },
+    ...(isTeamAdmin ? [{ id: 'settings', name: 'Workspace Settings', icon: Settings }] : []),
   ];
 
   const handleCreateTeamSubmit = async (e: React.FormEvent) => {

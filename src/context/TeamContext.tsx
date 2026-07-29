@@ -128,6 +128,11 @@ interface TeamContextType {
   fetchTeams: () => Promise<void>;
   createTeam: (name: string, description: string) => Promise<TeamType>;
   inviteMember: (email: string) => Promise<any>;
+  deleteTeam: (teamId: string) => Promise<void>;
+  updateMemberRole: (userId: string, role: 'admin' | 'member') => Promise<void>;
+  removeMember: (userId: string) => Promise<void>;
+  fetchPendingInvites: () => Promise<any[]>;
+  revokeInvite: (inviteId: string) => Promise<void>;
   createTask: (task: any) => Promise<void>;
   updateTask: (taskId: string, updates: any) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
@@ -213,6 +218,71 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTeams(prev => prev.map(t => t._id === activeTeam._id ? data.team : t));
     setActiveTeamState(data.team);
     return data;
+  };
+
+  const deleteTeam = async (teamId: string) => {
+    const res = await fetch(`${API_BASE_URL}/teams/${teamId}`, {
+      method: 'DELETE',
+      headers: headers(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete team');
+
+    // Remove from teams list
+    setTeams(prev => prev.filter(t => t._id !== teamId));
+    if (activeTeam?._id === teamId) {
+      const remaining = teams.filter(t => t._id !== teamId);
+      setActiveTeamState(remaining.length > 0 ? remaining[0] : null);
+    }
+  };
+
+  const updateMemberRole = async (userId: string, role: 'admin' | 'member') => {
+    if (!activeTeam) return;
+    const res = await fetch(`${API_BASE_URL}/teams/${activeTeam._id}/members/${userId}`, {
+      method: 'PUT',
+      headers: headers(),
+      body: JSON.stringify({ role }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to update member role');
+
+    setTeams(prev => prev.map(t => t._id === activeTeam._id ? data : t));
+    setActiveTeamState(data);
+  };
+
+  const removeMember = async (userId: string) => {
+    if (!activeTeam) return;
+    const res = await fetch(`${API_BASE_URL}/teams/${activeTeam._id}/members/${userId}`, {
+      method: 'DELETE',
+      headers: headers(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to remove member');
+
+    setTeams(prev => prev.map(t => t._id === activeTeam._id ? data : t));
+    setActiveTeamState(data);
+  };
+
+  const fetchPendingInvites = async () => {
+    if (!activeTeam) return [];
+    const res = await fetch(`${API_BASE_URL}/teams/${activeTeam._id}/invites`, {
+      headers: headers(),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || 'Failed to fetch invites');
+    }
+    return res.json();
+  };
+
+  const revokeInvite = async (inviteId: string) => {
+    if (!activeTeam) return;
+    const res = await fetch(`${API_BASE_URL}/teams/${activeTeam._id}/invites/${inviteId}`, {
+      method: 'DELETE',
+      headers: headers(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to revoke invite');
   };
 
   const fetchTasks = useCallback(async () => {
@@ -474,6 +544,11 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fetchTeams,
         createTeam,
         inviteMember,
+        deleteTeam,
+        updateMemberRole,
+        removeMember,
+        fetchPendingInvites,
+        revokeInvite,
         createTask,
         updateTask,
         deleteTask,
