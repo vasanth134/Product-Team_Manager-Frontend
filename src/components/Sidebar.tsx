@@ -44,6 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [generatedInviteLink, setGeneratedInviteLink] = useState<string | null>(null);
 
   const menuItems = [
     { id: 'dashboard', name: 'Workspace Dashboard', icon: LayoutDashboard },
@@ -76,14 +77,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
     setInviteLoading(true);
     setInviteError(null);
     setInviteSuccess(false);
+    setGeneratedInviteLink(null);
     try {
-      await inviteMember(inviteEmail);
+      const data = await inviteMember(inviteEmail);
       setInviteEmail('');
       setInviteSuccess(true);
-      setTimeout(() => {
-        setInviteSuccess(false);
-        setShowInviteModal(false);
-      }, 1500);
+      if (data && data.inviteLink) {
+        setGeneratedInviteLink(data.inviteLink);
+      } else {
+        setTimeout(() => {
+          setInviteSuccess(false);
+          setShowInviteModal(false);
+        }, 1500);
+      }
     } catch (err: any) {
       setInviteError(err.message || 'Failed to send invite');
     } finally {
@@ -189,7 +195,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
                 <span>Teammates ({activeTeam.members.length})</span>
               </span>
               <button 
-                onClick={() => setShowInviteModal(true)}
+                onClick={() => {
+                  setGeneratedInviteLink(null);
+                  setInviteSuccess(false);
+                  setInviteError(null);
+                  setShowInviteModal(true);
+                }}
                 className="p-1 rounded-lg bg-slate-950 border border-slate-900 text-indigo-450 hover:text-indigo-400 transition cursor-pointer"
                 title="Invite Member"
               >
@@ -338,38 +349,70 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
                 Teammate invited successfully!
               </div>
             )}
-            <form onSubmit={handleInviteSubmit} className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[9px] font-bold text-slate-450 uppercase tracking-widest">User Email Address</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="teammate@company.com"
-                  value={inviteEmail}
-                  onChange={e => setInviteEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs"
-                />
-                <span className="text-[9px] text-slate-500 block leading-relaxed pt-1.5 font-medium">
-                  An invitation message with a secure link will be sent to the user to join the workspace.
-                </span>
+            {generatedInviteLink ? (
+              <div className="space-y-4">
+                <div className="p-3.5 rounded-xl bg-indigo-950/30 border border-indigo-900/50 text-indigo-200 text-xs">
+                  <p className="font-bold mb-1">Invitation Link Created:</p>
+                  <p className="text-slate-400 break-all select-all font-mono p-2 bg-slate-950/80 rounded border border-slate-900 mt-2">{generatedInviteLink}</p>
+                </div>
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-900/50">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedInviteLink);
+                      alert('Invitation link copied to clipboard!');
+                    }}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-550 text-white font-semibold text-xs cursor-pointer"
+                  >
+                    Copy Link
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGeneratedInviteLink(null);
+                      setInviteSuccess(false);
+                      setShowInviteModal(false);
+                    }}
+                    className="px-4 py-2 rounded-xl border border-slate-800 hover:bg-slate-900 text-slate-350 text-xs cursor-pointer font-semibold"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-900/50 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowInviteModal(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-800 hover:bg-slate-900 text-slate-350 text-xs cursor-pointer font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={inviteLoading || inviteSuccess}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-550 text-white font-semibold text-xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                >
-                  {inviteLoading ? 'Sending...' : 'Send Invite'}
-                </button>
-              </div>
-            </form>
+            ) : (
+              <form onSubmit={handleInviteSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-slate-450 uppercase tracking-widest">User Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="teammate@company.com"
+                    value={inviteEmail}
+                    onChange={e => setInviteEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl glass-input text-xs"
+                  />
+                  <span className="text-[9px] text-slate-500 block leading-relaxed pt-1.5 font-medium">
+                    An invitation message with a secure link will be sent to the user to join the workspace.
+                  </span>
+                </div>
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-900/50 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowInviteModal(false)}
+                    className="px-4 py-2 rounded-xl border border-slate-800 hover:bg-slate-900 text-slate-350 text-xs cursor-pointer font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={inviteLoading}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-550 text-white font-semibold text-xs flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                  >
+                    {inviteLoading ? 'Sending...' : 'Send Invite'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

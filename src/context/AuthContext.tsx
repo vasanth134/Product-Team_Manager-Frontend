@@ -33,11 +33,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadStoredUser = async () => {
     setLoading(true);
-    // Dev branch bypass: if there is no token, set a bypass token
-    let storedToken = localStorage.getItem('aether_token');
+    const storedToken = localStorage.getItem('aether_token');
+
     if (!storedToken) {
-      storedToken = 'bypass_token';
-      localStorage.setItem('aether_token', 'bypass_token');
+      setUser(null);
+      setToken(null);
+      setLoading(false);
+      return;
     }
 
     setToken(storedToken);
@@ -51,7 +53,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userData = await response.json();
         setUser(userData);
       } else {
-        // Fallback for dev mode when backend has issues or user doesn't exist
+        // Token is invalid or expired
+        console.warn('Session verification failed. Clearing invalid session.');
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem('aether_token');
+      }
+    } catch (err) {
+      console.error('Failed to load session:', err);
+      // Only fallback to mock user in dev mode if they explicitly had a bypass token
+      if (storedToken === 'bypass_token') {
         setUser({
           id: 'dev_user_bypass_id',
           name: 'Alex Rivera',
@@ -59,17 +70,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex%20Rivera',
           role: 'Product Manager'
         });
+      } else {
+        setUser(null);
+        setToken(null);
       }
-    } catch (err) {
-      console.error('Failed to load session:', err);
-      // Fallback in dev branch
-      setUser({
-        id: 'dev_user_bypass_id',
-        name: 'Alex Rivera',
-        email: 'alex.rivera@aether.io',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex%20Rivera',
-        role: 'Product Manager'
-      });
     } finally {
       setLoading(false);
     }

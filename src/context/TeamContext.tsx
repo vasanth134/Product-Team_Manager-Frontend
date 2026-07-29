@@ -127,7 +127,7 @@ interface TeamContextType {
   setSelectedDate: (date: string) => void;
   fetchTeams: () => Promise<void>;
   createTeam: (name: string, description: string) => Promise<TeamType>;
-  inviteMember: (email: string) => Promise<void>;
+  inviteMember: (email: string) => Promise<any>;
   createTask: (task: any) => Promise<void>;
   updateTask: (taskId: string, updates: any) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
@@ -210,8 +210,9 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!res.ok) throw new Error(data.error || 'Failed to invite member');
     
     // Update active team in UI state
-    setTeams(prev => prev.map(t => t._id === activeTeam._id ? data : t));
-    setActiveTeamState(data);
+    setTeams(prev => prev.map(t => t._id === activeTeam._id ? data.team : t));
+    setActiveTeamState(data.team);
+    return data;
   };
 
   const fetchTasks = useCallback(async () => {
