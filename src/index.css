@@ -144,14 +144,17 @@ body {
 [data-theme="light"] .bg-\[\#070A0F\],
 [data-theme="light"] .bg-\[\#05080E\],
 [data-theme="light"] .bg-\[\#0A0F1A\],
+[data-theme="light"] .bg-\[\#05070B\],
 [data-theme="light"] .bg-\[\#070a0f\] { background-color: var(--bg-base) !important; }
 
 /* ─── Slate background shades ───────────────────────────────── */
 [data-theme="light"] .bg-slate-950    { background-color: #EEF2F8 !important; }
 [data-theme="light"] .bg-slate-950\/10 { background-color: rgba(238,242,248,0.5) !important; }
+[data-theme="light"] .bg-slate-950\/15 { background-color: rgba(238,242,248,0.6) !important; }
 [data-theme="light"] .bg-slate-950\/20 { background-color: rgba(238,242,248,0.7) !important; }
 [data-theme="light"] .bg-slate-950\/30 { background-color: rgba(238,242,248,0.7) !important; }
 [data-theme="light"] .bg-slate-950\/40 { background-color: rgba(238,242,248,0.8) !important; }
+[data-theme="light"] .bg-slate-950\/45 { background-color: rgba(238,242,248,0.8) !important; }
 [data-theme="light"] .bg-slate-950\/60 { background-color: rgba(232,238,248,0.9) !important; }
 [data-theme="light"] .bg-slate-950\/80 { background-color: rgba(232,238,248,0.95) !important; }
 [data-theme="light"] .bg-slate-900    { background-color: #E2E8F0 !important; }
@@ -350,5 +353,21 @@ body {
 .glass, .glass-card, .glass-panel, .glass-input,
 aside, main, header, nav, thead, tbody, tr, td, th {
   transition: background 0.25s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* ─── Infinite Marquee ──────────────────────────────────────────────────────── */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  animation: marquee 35s linear infinite;
+  width: max-content;
 }
 

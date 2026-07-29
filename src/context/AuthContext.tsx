@@ -33,13 +33,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadStoredUser = async () => {
     setLoading(true);
-    const storedToken = localStorage.getItem('aether_token');
-    
+    // Dev branch bypass: if there is no token, set a bypass token
+    let storedToken = localStorage.getItem('aether_token');
     if (!storedToken) {
-      setToken(null);
-      setUser(null);
-      setLoading(false);
-      return;
+      storedToken = 'bypass_token';
+      localStorage.setItem('aether_token', 'bypass_token');
     }
 
     setToken(storedToken);
@@ -53,14 +51,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userData = await response.json();
         setUser(userData);
       } else {
-        localStorage.removeItem('aether_token');
-        setToken(null);
-        setUser(null);
+        // Fallback for dev mode when backend has issues or user doesn't exist
+        setUser({
+          id: 'dev_user_bypass_id',
+          name: 'Alex Rivera',
+          email: 'alex.rivera@aether.io',
+          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex%20Rivera',
+          role: 'Product Manager'
+        });
       }
     } catch (err) {
       console.error('Failed to load session:', err);
-      setToken(null);
-      setUser(null);
+      // Fallback in dev branch
+      setUser({
+        id: 'dev_user_bypass_id',
+        name: 'Alex Rivera',
+        email: 'alex.rivera@aether.io',
+        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex%20Rivera',
+        role: 'Product Manager'
+      });
     } finally {
       setLoading(false);
     }
