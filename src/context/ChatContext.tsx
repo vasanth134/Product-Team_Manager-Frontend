@@ -54,7 +54,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string }> = ({ children, teamId }) => {
   const { user, token } = useAuth();
   const [messages, setMessages]         = useState<ChatMessage[]>([]);
-  const [typingUsers, setTypingUsers]   = useState<string[]>([]);
+  const [typingMap, setTypingMap]       = useState<Record<string, string>>({});
   const [connected, setConnected]       = useState(false);
   const [uploading, setUploading]       = useState(false);
   const [inCall, setInCall]             = useState(false);
@@ -67,6 +67,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   const socketRef  = useRef<Socket | null>(null);
   const pcRef      = useRef<RTCPeerConnection | null>(null);
   const peerIdRef  = useRef<string>(''); // remote socket ID for signaling
+  const localStreamRef = useRef<MediaStream | null>(null);
+
+  // Derived array of usernames currently typing
+  const typingUsers = Object.values(typingMap);
 
   // ── Socket connection ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -84,12 +88,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
       setMessages(prev => [...prev, msg]);
     });
 
-    socket.on('user_typing', ({ userName }: { userName: string }) => {
-      setTypingUsers(prev => prev.includes(userName) ? prev : [...prev, userName]);
+    socket.on('user_typing', ({ userId, userName }: { userId: string; userName: string }) => {
+      setTypingMap(prev => ({ ...prev, [userId]: userName }));
     });
 
     socket.on('user_stopped_typing', ({ userId }: { userId: string }) => {
-      setTypingUsers(prev => prev.filter(u => u !== userId));
+      setTypingMap(prev => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
+    });
+
+    socket.on('user_left', ({ userId }: { userId: string }) => {
+      setTypingMap(prev => {
+        const next = { ...prev };
+        delete next[userId];
+        return next;
+      });
     });
 
     // ── WebRTC Signaling events ──────────────────────────────────────────────
@@ -127,7 +143,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
       } catch { /* ignore */ }
     });
 
-    socket.on('call_ended', () => cleanupCall());
+    socket.on('call_ended', ({ from }: { from: string }) => {
+      // Only end the call if the signal originates from our call partner or ourselves
+      if (from === peerIdRef.current || from === socketRef.current?.id) {
+        cleanupCall();
+      }
+    });
 
     return () => {
       socket.emit('leave_room', { teamId });
@@ -140,6 +161,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   useEffect(() => {
     if (!teamId) return;
     setMessages([]);
+    setTypingMap({});
     fetch(`${API_BASE_URL}/chat/messages?teamId=${teamId}`, {
       headers: { Authorization: `Bearer ${token || 'bypass_token'}` },
     })
@@ -201,7 +223,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     });
     pcRef.current = pc;
 
-    const mediaStream = stream || localStream;
+    const mediaStream = stream || localStreamRef.current;
     mediaStream?.getTracks().forEach(track => pc.addTrack(track, mediaStream));
 
     pc.onicecandidate = ({ candidate }) => {
@@ -218,7 +240,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     };
 
     return pc;
-  }, [localStream]);
+  }, []);
 
   const createOffer = useCallback(async () => {
     if (!pcRef.current) await setupPeerConnection();
@@ -233,13 +255,17 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
       video: callType === 'video',
     });
     setLocalStream(stream);
+    localStreamRef.current = stream;
     return stream;
   }, []);
 
   const cleanupCall = useCallback(() => {
     pcRef.current?.close();
     pcRef.current = null;
-    localStream?.getTracks().forEach(t => t.stop());
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(t => t.stop());
+      localStreamRef.current = null;
+    }
     setLocalStream(null);
     setRemoteStream(null);
     setInCall(false);
@@ -247,7 +273,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     setIsMuted(false);
     setIsCameraOff(false);
     peerIdRef.current = '';
-  }, [localStream]);
+  }, []);
 
   const startCall = useCallback(async (callType: 'audio' | 'video') => {
     try {
@@ -286,14 +312,18 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   }, [teamId, cleanupCall]);
 
   const toggleMute = useCallback(() => {
-    localStream?.getAudioTracks().forEach(t => { t.enabled = !t.enabled; });
+    if (localStreamRef.current) {
+      localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = !t.enabled; });
+    }
     setIsMuted(m => !m);
-  }, [localStream]);
+  }, []);
 
   const toggleCamera = useCallback(() => {
-    localStream?.getVideoTracks().forEach(t => { t.enabled = !t.enabled; });
+    if (localStreamRef.current) {
+      localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = !t.enabled; });
+    }
     setIsCameraOff(c => !c);
-  }, [localStream]);
+  }, []);
 
   return (
     <ChatContext.Provider value={{
