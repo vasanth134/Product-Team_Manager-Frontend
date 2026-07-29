@@ -112,7 +112,7 @@ export const Roadmap: React.FC = () => {
     <div className="flex-1 flex flex-col overflow-hidden bg-[#070A0F]">
       
       {/* Page Header */}
-      <div className="p-8 border-b border-slate-900 flex justify-between items-center flex-shrink-0">
+      <div className="p-4 sm:p-8 border-b border-slate-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tight font-display">Product Roadmap</h2>
           <p className="text-xs text-slate-400 mt-1">
@@ -129,7 +129,7 @@ export const Roadmap: React.FC = () => {
       </div>
 
       {/* Roadmap List View */}
-      <div className="flex-1 overflow-y-auto p-8 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6">
         
         {milestones.length === 0 ? (
           <div className="max-w-2xl mx-auto text-center py-16 px-4 border border-dashed border-slate-850 rounded-2xl space-y-4">

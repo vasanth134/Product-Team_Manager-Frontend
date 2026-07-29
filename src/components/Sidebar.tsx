@@ -22,9 +22,11 @@ import {
 interface SidebarProps {
   currentTab: string;
   setCurrentTab: (tab: string) => void;
+  isOpenOnMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, isOpenOnMobile, onCloseMobile }) => {
   const { user, logout } = useAuth();
   const { teams, activeTeam, setActiveTeam, createTeam, inviteMember } = useTeam();
   const { theme, toggleTheme } = useTheme();
@@ -99,17 +101,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab }) =
 
   return (
     <>
-      <aside className="w-64 glass-panel flex flex-col h-screen flex-shrink-0 z-20 border-r border-slate-900/50">
+      <aside className={`w-64 glass-panel flex flex-col h-screen flex-shrink-0 z-50 border-r border-slate-900/50 fixed md:relative transition-transform duration-300 ${isOpenOnMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         
         {/* Brand Logo with dynamic glow */}
-        <div className="p-6 flex items-center gap-3 border-b border-slate-900/50 relative overflow-hidden group">
-          <div className="w-8 h-8 rounded-xl bg-gradient-indigo-purple flex items-center justify-center shadow-lg shadow-indigo-650/20 group-hover:rotate-6 transition duration-300">
-            <Sparkles className="w-4 h-4 text-white" />
+        <div className="p-6 flex items-center justify-between border-b border-slate-900/50 relative overflow-hidden group">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-gradient-indigo-purple flex items-center justify-center shadow-lg shadow-indigo-650/20 group-hover:rotate-6 transition duration-300">
+              <Sparkles className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <span className="font-black text-lg tracking-tight font-display text-white">Aether</span>
+              <span className="text-[9px] block text-indigo-400 font-extrabold tracking-widest uppercase">WORKSPACE</span>
+            </div>
           </div>
-          <div>
-            <span className="font-black text-lg tracking-tight font-display text-white">Aether</span>
-            <span className="text-[9px] block text-indigo-400 font-extrabold tracking-widest uppercase">WORKSPACE</span>
-          </div>
+          {onCloseMobile && (
+            <button 
+              onClick={onCloseMobile}
+              className="md:hidden p-1.5 rounded-xl bg-slate-950/50 border border-slate-900 text-slate-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Team Switcher Dropdown - Upgraded visual details */}

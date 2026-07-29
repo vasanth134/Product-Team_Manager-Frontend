@@ -155,7 +155,7 @@ export const TableView: React.FC<TableViewProps> = ({ onEditTask }) => {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-[#070A0F] p-8">
+    <div className="flex-1 flex flex-col overflow-hidden bg-[#070A0F] p-4 sm:p-8">
       {/* Header Filter Controls Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>

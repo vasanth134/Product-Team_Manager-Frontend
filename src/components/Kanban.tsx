@@ -185,7 +185,7 @@ export const Kanban: React.FC = () => {
     <div className="flex-1 flex flex-col overflow-hidden bg-[#070A0F]">
       
       {/* Upper header */}
-      <div className="p-8 border-b border-slate-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
+      <div className="p-4 sm:p-8 border-b border-slate-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tight font-display">Product Task Board</h2>
           <p className="text-xs text-slate-400 mt-1">
@@ -210,7 +210,7 @@ export const Kanban: React.FC = () => {
 
       {/* Main View Area */}
       {viewMode === 'kanban' ? (
-        <div className="flex-1 overflow-x-auto p-8 flex gap-5 items-start">
+        <div className="flex-1 overflow-x-auto p-4 sm:p-8 flex gap-5 items-start">
           {columns.map(col => {
             const colTasks = tasks.filter(t => t.status === col.id);
             const colPoints = colTasks.reduce((acc, t) => acc + (t.storyPoints || 0), 0);

@@ -96,7 +96,7 @@ export const ProfileView: React.FC = () => {
     <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 bg-[#070A0F] transition-colors duration-250">
       
       {/* Header section */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tight font-display">User Profile</h2>
           <p className="text-xs text-slate-450 mt-1">
@@ -105,7 +105,7 @@ export const ProfileView: React.FC = () => {
         </div>
 
         {/* Quick Theme Switcher in header too for ease of access */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-center">
           <button
             onClick={toggleTheme}
             className="glass px-3.5 py-2 rounded-xl border border-slate-800/80 bg-slate-950/20 text-slate-300 hover:text-indigo-400 transition flex items-center gap-2 text-xs font-medium cursor-pointer"

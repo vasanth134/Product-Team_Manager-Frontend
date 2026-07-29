@@ -10,15 +10,16 @@ import { Roadmap } from './components/Roadmap';
 import { Standups } from './components/Standups';
 import { Chat } from './components/Chat';
 import { ProfileView } from './components/ProfileView';
-import { Sparkles, FolderKanban } from 'lucide-react';
+import { Sparkles, FolderKanban, Menu } from 'lucide-react';
 
 const WorkspaceContainer: React.FC = () => {
-  const { teams, createTeam } = useTeam();
+  const { teams, activeTeam, createTeam } = useTeam();
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamDesc, setNewTeamDesc] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
   const handleInitialTeamSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,9 +124,43 @@ const WorkspaceContainer: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F]">
-      <Sidebar currentTab={currentTab} setCurrentTab={setCurrentTab} />
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] relative">
+      {/* Mobile Top Header */}
+      <header className="md:hidden h-14 w-full flex items-center justify-between px-4 border-b border-slate-900/60 bg-[#070A0F]/80 backdrop-blur-md z-30 absolute top-0 left-0">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setShowMobileSidebar(true)}
+            className="p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white cursor-pointer"
+          >
+            <Menu className="w-4.5 h-4.5" />
+          </button>
+          <span className="font-bold text-sm tracking-tight text-white font-display">Aether Workspace</span>
+        </div>
+        {activeTeam && (
+          <div className="text-[10px] text-indigo-400 font-bold bg-indigo-950/45 px-2.5 py-1 rounded-lg border border-indigo-900/30">
+            {activeTeam.name}
+          </div>
+        )}
+      </header>
+
+      {/* Sidebar Drawer Backdrop */}
+      {showMobileSidebar && (
+        <div 
+          onClick={() => setShowMobileSidebar(false)}
+          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
+        ></div>
+      )}
+
+      <Sidebar 
+        currentTab={currentTab} 
+        setCurrentTab={(tab) => {
+          setCurrentTab(tab);
+          setShowMobileSidebar(false);
+        }} 
+        isOpenOnMobile={showMobileSidebar}
+        onCloseMobile={() => setShowMobileSidebar(false)}
+      />
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden pt-14 md:pt-0">
         {renderActiveView()}
       </main>
     </div>

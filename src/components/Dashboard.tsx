@@ -67,7 +67,7 @@ export const Dashboard: React.FC = () => {
   });
 
   return (
-    <div className="flex-1 overflow-y-auto p-8 space-y-10 bg-app relative">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 sm:space-y-10 bg-app relative">
       
       {/* Background ambient lighting */}
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[140px] pointer-events-none"></div>

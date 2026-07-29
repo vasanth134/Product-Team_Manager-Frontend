@@ -65,7 +65,7 @@ export const Standups: React.FC = () => {
     <div className="flex-1 flex flex-col overflow-hidden bg-[#070A0F]">
       
       {/* Page Header */}
-      <div className="p-8 border-b border-slate-900 flex justify-between items-center flex-shrink-0">
+      <div className="p-4 sm:p-8 border-b border-slate-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tight font-display">Daily Standups</h2>
           <p className="text-xs text-slate-400 mt-1">
@@ -74,7 +74,7 @@ export const Standups: React.FC = () => {
         </div>
         
         {/* Date Selector input */}
-        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl glass border-slate-800 bg-slate-950/20">
+        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl glass border-slate-800 bg-slate-950/20 self-start sm:self-center">
           <Calendar className="w-4 h-4 text-indigo-400" />
           <input
             type="date"
@@ -87,7 +87,7 @@ export const Standups: React.FC = () => {
       </div>
 
       {/* Primary layout scroll area */}
-      <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-8 grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
         
         {/* Standup Logging Form Column */}
         <div className="lg:col-span-1 space-y-6">
