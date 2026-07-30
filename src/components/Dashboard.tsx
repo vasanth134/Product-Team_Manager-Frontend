@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
-  const { analytics, activeTeam, loading } = useTeam();
+  const { analytics, loading } = useTeam();
 
   if (loading || !analytics) {
     return (
@@ -75,12 +75,9 @@ export const Dashboard: React.FC = () => {
       {/* Header section with high-end typography */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-app pb-6">
         <div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight font-display">
+          <h2 className="text-xl font-bold text-white tracking-tight font-display">
             Workspace Dashboard
           </h2>
-          <p className="text-xs text-slate-400 mt-1.5 max-w-xl leading-relaxed">
-            Real-time delivery progress and workload metrics for the <span className="text-indigo-400 font-semibold">{activeTeam?.name}</span> workspace.
-          </p>
         </div>
         
         {/* Dynamic standup summary */}
@@ -274,7 +271,7 @@ export const Dashboard: React.FC = () => {
               return (
                 <div key={member.userId} className="flex items-center gap-4 group">
                   {/* User Profile with Squircle avatar */}
-                  <div className="w-32 flex items-center gap-2.5 flex-shrink-0">
+                  <div className="w-24 sm:w-32 flex items-center gap-2.5 flex-shrink-0">
                     <img 
                       src={member.avatarUrl} 
                       alt={member.name} 
@@ -322,7 +319,7 @@ export const Dashboard: React.FC = () => {
                       )}
 
                       {totalTasks === 0 && (
-                        <div className="w-full flex items-center pl-3 text-[9px] text-slate-500 font-medium tracking-wide">
+                        <div className="w-full flex items-center justify-center text-[9px] text-slate-500 font-medium tracking-wide whitespace-nowrap px-2">
                           No tasks assigned
                         </div>
                       )}

@@ -98,10 +98,7 @@ export const ProfileView: React.FC = () => {
       {/* Header section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight font-display">User Profile</h2>
-          <p className="text-xs text-slate-450 mt-1">
-            Manage your personal data, system role, and security preferences.
-          </p>
+          <h2 className="text-xl font-bold text-white tracking-tight font-display">User Profile</h2>
         </div>
 
         {/* Quick Theme Switcher in header too for ease of access */}

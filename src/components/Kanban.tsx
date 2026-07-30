@@ -185,22 +185,20 @@ export const Kanban: React.FC = () => {
     <div className="flex-1 flex flex-col overflow-hidden bg-[#070A0F]">
       
       {/* Upper header */}
-      <div className="p-4 sm:p-8 border-b border-slate-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
-        <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight font-display">Product Task Board</h2>
-          <p className="text-xs text-slate-400 mt-1">
-            {viewMode === 'kanban' ? (
-              <>Drag cards to update task status in <span className="text-indigo-400 font-semibold">{activeTeam?.name}</span></>
-            ) : (
-              <>Interactive table view for <span className="text-indigo-400 font-semibold">{activeTeam?.name}</span></>
-            )}
-          </p>
+      <div className="p-4 sm:p-8 border-b border-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0">
+        <div className="flex justify-between items-center w-full sm:w-auto gap-4">
+          <h2 className="text-xl font-bold text-white tracking-tight font-display">Product Task Board</h2>
+          <div className="sm:hidden">
+            <ViewSwitcher viewMode={viewMode} onViewChange={handleViewChange} />
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <ViewSwitcher viewMode={viewMode} onViewChange={handleViewChange} />
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <div className="hidden sm:block">
+            <ViewSwitcher viewMode={viewMode} onViewChange={handleViewChange} />
+          </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4.5 py-2.5 rounded-xl bg-gradient-indigo-purple hover:opacity-95 font-medium text-white flex items-center gap-2 cursor-pointer shadow-lg shadow-indigo-650/15 text-xs transition duration-150 active:scale-98"
+            className="w-full sm:w-auto px-4.5 py-2.5 rounded-xl bg-gradient-indigo-purple hover:opacity-95 font-semibold text-white flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-indigo-650/15 text-xs transition duration-150 active:scale-98"
           >
             <Plus className="w-4 h-4" />
             <span>{viewMode === 'kanban' ? 'New Kanban Task' : 'New Task'}</span>

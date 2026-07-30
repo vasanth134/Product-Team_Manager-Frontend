@@ -154,10 +154,7 @@ export const TeamSettings: React.FC = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-900 pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight font-display">Workspace Settings</h2>
-          <p className="text-xs text-slate-450 mt-1">
-            Manage teammates, roles, access permissions, and workspace lifecycles for <span className="text-indigo-400 font-semibold">{activeTeam.name}</span>.
-          </p>
+          <h2 className="text-xl font-bold text-white tracking-tight font-display">Workspace Settings</h2>
         </div>
       </div>
 
@@ -189,7 +186,8 @@ export const TeamSettings: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop View: Table Layout */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-900 text-slate-500 font-bold uppercase text-[9px] tracking-wider pb-2">
@@ -249,7 +247,7 @@ export const TeamSettings: React.FC = () => {
                           <button
                             onClick={() => handleRoleChange(targetUser._id, member.role)}
                             disabled={actionLoading === targetUser._id}
-                            className="px-2.5 py-1.5 rounded-lg border border-slate-855 hover:border-slate-700 bg-slate-900/20 text-slate-350 hover:text-white transition text-[10px] font-bold cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                            className="px-2.5 py-1.5 rounded-lg border border-slate-855 hover:border-slate-700 bg-slate-900/20 text-slate-355 hover:text-white transition text-[10px] font-bold cursor-pointer disabled:opacity-50 flex items-center gap-1"
                           >
                             <Shield className="w-3 h-3 text-indigo-455" />
                             <span>{member.role === 'admin' ? 'Demote to Member' : 'Promote to Admin'}</span>
@@ -278,6 +276,83 @@ export const TeamSettings: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile View: Cards Layout */}
+        <div className="md:hidden space-y-4">
+          {activeTeam.members.map(member => {
+            const targetUser = member.user;
+            const isTargetOwner = member.role === 'owner';
+            const isTargetSelf = targetUser._id === user?.id;
+
+            // Authorization flags
+            const canChangeRole = isAdmin && !isTargetOwner && !isTargetSelf && (isOwner || member.role !== 'admin');
+            const canRemove = isAdmin && !isTargetOwner && !isTargetSelf && (isOwner || member.role !== 'admin');
+
+            return (
+              <div key={targetUser._id} className="p-4 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3 shadow-inner">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <img 
+                      src={targetUser.avatarUrl} 
+                      alt={targetUser.name} 
+                      className="w-9 h-9 rounded-xl object-cover border border-app bg-slate-900 flex-shrink-0"
+                    />
+                    <div className="truncate min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-slate-200 text-sm truncate">{targetUser.name}</span>
+                        {isTargetSelf && (
+                          <span className="text-[8px] bg-slate-900 text-slate-450 border border-slate-800 rounded px-1.5 py-0.5 font-semibold flex-shrink-0">You</span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-mono block truncate">{targetUser.email}</span>
+                    </div>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border block ${
+                      member.role === 'owner' 
+                        ? 'bg-amber-950/30 text-amber-400 border-amber-900/40' 
+                        : member.role === 'admin' 
+                          ? 'bg-indigo-950/30 text-indigo-400 border-indigo-900/40' 
+                          : 'bg-slate-900/40 text-slate-400 border-slate-800/80'
+                    }`}>
+                      {member.role}
+                    </span>
+                  </div>
+                </div>
+
+                {(canChangeRole || canRemove) && (
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-900/30">
+                    {canChangeRole && (
+                      <button
+                        onClick={() => handleRoleChange(targetUser._id, member.role)}
+                        disabled={actionLoading === targetUser._id}
+                        className="px-2.5 py-1.5 rounded-lg border border-slate-800 hover:border-slate-700 bg-slate-900/20 text-slate-350 hover:text-white transition text-[10px] font-bold cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                      >
+                        <Shield className="w-3 h-3 text-indigo-450" />
+                        <span>{member.role === 'admin' ? 'Demote' : 'Promote to Admin'}</span>
+                      </button>
+                    )}
+                    {canRemove && (
+                      <button
+                        onClick={() => handleRemoveMember(targetUser._id, targetUser.name)}
+                        disabled={actionLoading === targetUser._id}
+                        className="p-1.5 rounded-lg border border-slate-800 hover:border-red-900 text-slate-500 hover:text-red-400 bg-slate-900/10 transition cursor-pointer disabled:opacity-50"
+                        title="Remove Member"
+                      >
+                        <UserMinus className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                )}
+                {!canChangeRole && !canRemove && (
+                  <div className="flex items-center justify-end pt-2 border-t border-slate-900/30 text-[9px] text-slate-500 font-semibold tracking-wide gap-1">
+                    <Lock className="w-3 h-3 text-slate-650" /> Workspace Managed
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       {/* PENDING INVITATIONS SECTION */}
@@ -302,58 +377,106 @@ export const TeamSettings: React.FC = () => {
               No pending invitations for this team.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-900 text-slate-500 font-bold uppercase text-[9px] tracking-wider pb-2">
-                    <th className="py-2.5 px-3">Invited Email</th>
-                    <th className="py-2.5 px-3">Assigned Role</th>
-                    <th className="py-2.5 px-3">Invited By</th>
-                    <th className="py-2.5 px-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-950/50">
-                  {invites.map(invite => (
-                    <tr key={invite._id} className="hover:bg-slate-950/20 transition-colors">
-                      <td className="py-3 px-3 text-slate-350 font-bold font-mono text-[11px]">{invite.email}</td>
-                      <td className="py-3 px-3">
-                        <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border ${
+            <>
+              {/* Desktop View: Table Layout */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-900 text-slate-500 font-bold uppercase text-[9px] tracking-wider pb-2">
+                      <th className="py-2.5 px-3">Invited Email</th>
+                      <th className="py-2.5 px-3">Assigned Role</th>
+                      <th className="py-2.5 px-3">Invited By</th>
+                      <th className="py-2.5 px-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-950/50">
+                    {invites.map(invite => (
+                      <tr key={invite._id} className="hover:bg-slate-950/20 transition-colors">
+                        <td className="py-3 px-3 text-slate-350 font-bold font-mono text-[11px]">{invite.email}</td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border ${
+                            invite.role === 'admin' 
+                              ? 'bg-indigo-950/30 text-indigo-400 border-indigo-900/40' 
+                              : 'bg-slate-900/40 text-slate-400 border-slate-800/80'
+                          }`}>
+                            {invite.role}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-slate-450">{invite.invitedBy?.name || 'Unknown'}</td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleCopyLink(invite._id, invite.token)}
+                              className="p-1.5 rounded-lg border border-slate-855 hover:border-indigo-900 text-slate-500 hover:text-indigo-400 bg-slate-900/10 transition cursor-pointer"
+                              title="Copy Invitation Link"
+                            >
+                              {copiedInviteId === invite._id ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-450" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleRevokeInvite(invite._id, invite.email)}
+                              disabled={actionLoading === invite._id}
+                              className="p-1.5 rounded-lg border border-slate-855 hover:border-red-900 text-slate-500 hover:text-red-400 bg-slate-900/10 transition cursor-pointer disabled:opacity-50"
+                              title="Revoke Invitation"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile View: Cards Layout */}
+              <div className="md:hidden space-y-4">
+                {invites.map(invite => (
+                  <div key={invite._id} className="p-4 rounded-xl bg-slate-950/40 border border-slate-900 space-y-3 shadow-inner">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-mono font-bold text-slate-200 block truncate">{invite.email}</span>
+                        <span className="text-[10px] text-slate-550 block mt-0.5">Invited by: {invite.invitedBy?.name || 'Unknown'}</span>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase border block ${
                           invite.role === 'admin' 
                             ? 'bg-indigo-950/30 text-indigo-400 border-indigo-900/40' 
                             : 'bg-slate-900/40 text-slate-400 border-slate-800/80'
                         }`}>
                           {invite.role}
                         </span>
-                      </td>
-                      <td className="py-3 px-3 text-slate-450">{invite.invitedBy?.name || 'Unknown'}</td>
-                      <td className="py-3 px-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleCopyLink(invite._id, invite.token)}
-                            className="p-1.5 rounded-lg border border-slate-855 hover:border-indigo-900 text-slate-500 hover:text-indigo-400 bg-slate-900/10 transition cursor-pointer"
-                            title="Copy Invitation Link"
-                          >
-                            {copiedInviteId === invite._id ? (
-                              <Check className="w-3.5 h-3.5 text-emerald-450" />
-                            ) : (
-                              <Copy className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleRevokeInvite(invite._id, invite.email)}
-                            disabled={actionLoading === invite._id}
-                            className="p-1.5 rounded-lg border border-slate-855 hover:border-red-900 text-slate-500 hover:text-red-400 bg-slate-900/10 transition cursor-pointer disabled:opacity-50"
-                            title="Revoke Invitation"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-900/30">
+                      <button
+                        onClick={() => handleCopyLink(invite._id, invite.token)}
+                        className="p-1.5 rounded-lg border border-slate-800 hover:border-indigo-900 text-slate-400 hover:text-indigo-400 bg-slate-900/10 transition cursor-pointer"
+                        title="Copy Invitation Link"
+                      >
+                        {copiedInviteId === invite._id ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-450" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleRevokeInvite(invite._id, invite.email)}
+                        disabled={actionLoading === invite._id}
+                        className="p-1.5 rounded-lg border border-slate-800 hover:border-red-900 text-slate-500 hover:text-red-400 bg-slate-900/10 transition cursor-pointer disabled:opacity-50"
+                        title="Revoke Invitation"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </section>
       )}

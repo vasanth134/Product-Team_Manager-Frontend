@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trello, Table } from 'lucide-react';
+import { Trello, Table, ChevronDown } from 'lucide-react';
 
 export type TaskViewMode = 'kanban' | 'table';
 
@@ -10,34 +10,23 @@ export interface ViewSwitcherProps {
 
 export const ViewSwitcher: React.FC<ViewSwitcherProps> = ({ viewMode, onViewChange }) => {
   return (
-    <div className="inline-flex p-1 bg-slate-900/80 rounded-xl border border-slate-800/80 backdrop-blur-md items-center gap-1 shadow-inner">
-      <button
-        type="button"
-        onClick={() => onViewChange('kanban')}
-        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 cursor-pointer ${
-          viewMode === 'kanban'
-            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-        }`}
-        title="Switch to Kanban Board View"
-      >
-        <Trello className="w-3.5 h-3.5" />
-        <span>Kanban Board</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => onViewChange('table')}
-        className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 cursor-pointer ${
-          viewMode === 'table'
-            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-        }`}
-        title="Switch to Notion Table View"
-      >
-        <Table className="w-3.5 h-3.5" />
-        <span>Notion Table View</span>
-      </button>
+    <div className="relative inline-flex items-center">
+      <div className="flex items-center gap-1.5 pl-2.5 pr-2 py-1.5 bg-slate-900 rounded-lg border border-slate-800 text-[11px] text-slate-300 font-semibold cursor-pointer hover:border-slate-700 transition shadow-inner relative">
+        {viewMode === 'kanban' ? (
+          <Trello className="w-3 h-3 text-indigo-400" />
+        ) : (
+          <Table className="w-3 h-3 text-indigo-400" />
+        )}
+        <select
+          value={viewMode}
+          onChange={(e) => onViewChange(e.target.value as TaskViewMode)}
+          className="bg-transparent text-slate-200 outline-none pr-5 pl-0.5 border-none font-semibold text-[11px] cursor-pointer appearance-none relative z-10 focus:ring-0"
+        >
+          <option value="kanban" className="bg-[#0B0F19] text-slate-250">Kanban Board</option>
+          <option value="table" className="bg-[#0B0F19] text-slate-250">Table View</option>
+        </select>
+        <ChevronDown className="w-3 h-3 text-slate-500 absolute right-2 pointer-events-none" />
+      </div>
     </div>
   );
 };

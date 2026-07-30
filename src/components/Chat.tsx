@@ -189,7 +189,7 @@ const CallOverlay: React.FC = () => {
 
       {/* Audio / Video display viewport */}
       <div className="relative w-full h-full bg-slate-950 flex items-center justify-center">
-        {callType === 'audio' ? (
+        {(callType === 'audio' && !isRemoteScreenSharing && !isScreenSharing) ? (
           // Audio Call UI
           <div className="flex flex-col items-center gap-4 text-center z-10">
             <div className="relative">
@@ -320,7 +320,7 @@ const CallOverlay: React.FC = () => {
             )}
 
             {/* Local Video PiP overlay (draggable & touch-draggable) */}
-            {callType === 'video' && (
+            {(callType === 'video' || isScreenSharing) && (
               <div
                 ref={pipRef}
                 onMouseDown={handleMouseDown}
@@ -333,14 +333,14 @@ const CallOverlay: React.FC = () => {
                 }}
                 className="w-48 h-32 rounded-2xl overflow-hidden border border-indigo-500/40 shadow-2xl bg-slate-950 z-20 flex items-center justify-center group select-none transition-[border-color] duration-300 hover:border-indigo-500/60"
               >
-                {!isCameraOff ? (
+                {!isCameraOff && callType === 'video' ? (
                   <video ref={localVideoRef} autoPlay playsInline muted
                     className="w-full h-full object-cover pointer-events-none select-none"
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full w-full bg-slate-900 text-slate-500 text-xs pointer-events-none select-none">
-                    <VideoOff className="w-5 h-5 mb-1" />
-                    <span>Camera Off</span>
+                    <MonitorUp className="w-5 h-5 mb-1 text-indigo-400" />
+                    <span>Sharing Screen</span>
                   </div>
                 )}
                 <div className="absolute bottom-2 left-2 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] text-slate-300 font-semibold border border-slate-800">
@@ -353,41 +353,41 @@ const CallOverlay: React.FC = () => {
       </div>
 
       {/* Controls Overlay Floating at bottom */}
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-30 bg-slate-900/70 backdrop-blur-xl px-6 py-3.5 rounded-3xl border border-slate-800/80 shadow-2xl flex items-center gap-4">
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-30 bg-slate-900/70 backdrop-blur-xl px-4 py-2.5 sm:px-6 sm:py-3.5 rounded-3xl border border-slate-800/80 shadow-2xl flex items-center gap-3 sm:gap-4">
         <button
           onClick={toggleMute}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition text-white shadow-lg ${isMuted ? 'bg-red-600 hover:bg-red-500' : 'bg-slate-700 hover:bg-slate-600'}`}
+          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition text-white shadow-lg ${isMuted ? 'bg-red-600 hover:bg-red-500' : 'bg-slate-700 hover:bg-slate-600'}`}
           title={isMuted ? 'Unmute' : 'Mute'}
         >
-          {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+          {isMuted ? <MicOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
         </button>
 
         {callType === 'video' && (
           <button
             onClick={toggleCamera}
-            className={`w-14 h-14 rounded-full flex items-center justify-center transition text-white shadow-lg ${isCameraOff ? 'bg-red-600 hover:bg-red-500' : 'bg-slate-700 hover:bg-slate-600'}`}
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition text-white shadow-lg ${isCameraOff ? 'bg-red-600 hover:bg-red-500' : 'bg-slate-700 hover:bg-slate-600'}`}
             title={isCameraOff ? 'Enable Camera' : 'Disable Camera'}
           >
-            {isCameraOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+            {isCameraOff ? <VideoOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Video className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
         )}
 
-        {callType === 'video' && (
+        {(callType === 'video' || callType === 'audio') && (
           <button
             onClick={toggleScreenShare}
-            className={`w-14 h-14 rounded-full flex items-center justify-center transition text-white shadow-lg ${isScreenSharing ? 'bg-green-600 hover:bg-green-500' : 'bg-slate-700 hover:bg-slate-600'}`}
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition text-white shadow-lg ${isScreenSharing ? 'bg-green-600 hover:bg-green-500' : 'bg-slate-700 hover:bg-slate-600'}`}
             title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen'}
           >
-            <MonitorUp className="w-5 h-5" />
+            <MonitorUp className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         )}
 
         <button
           onClick={endCall}
-          className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 flex items-center justify-center transition shadow-xl"
+          className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-red-600 hover:bg-red-500 flex items-center justify-center transition shadow-xl"
           title="Hang Up"
         >
-          <PhoneOff className="w-6 h-6 text-white" />
+          <PhoneOff className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
         </button>
       </div>
     </div>
@@ -434,15 +434,17 @@ const MinimizedCallWidget: React.FC = () => {
           {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
         </button>
 
-        {callType === 'video' && (
+        {(callType === 'video' || callType === 'audio') && (
           <>
-            <button
-              onClick={toggleCamera}
-              className={`p-2 rounded-xl text-white transition flex-1 flex items-center justify-center ${isCameraOff ? 'bg-red-600 hover:bg-red-500' : 'bg-slate-850 hover:bg-slate-800'}`}
-              title={isCameraOff ? 'Camera On' : 'Camera Off'}
-            >
-              {isCameraOff ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
-            </button>
+            {callType === 'video' && (
+              <button
+                onClick={toggleCamera}
+                className={`p-2 rounded-xl text-white transition flex-1 flex items-center justify-center ${isCameraOff ? 'bg-red-600 hover:bg-red-500' : 'bg-slate-850 hover:bg-slate-800'}`}
+                title={isCameraOff ? 'Camera On' : 'Camera Off'}
+              >
+                {isCameraOff ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
+              </button>
+            )}
 
             <button
               onClick={toggleScreenShare}

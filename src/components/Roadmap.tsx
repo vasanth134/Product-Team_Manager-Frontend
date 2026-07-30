@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 export const Roadmap: React.FC = () => {
-  const { milestones, activeTeam, createMilestone, updateMilestone, deleteMilestone } = useTeam();
+  const { milestones, createMilestone, updateMilestone, deleteMilestone } = useTeam();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedMilestone, setSelectedMilestone] = useState<MilestoneType | null>(null);
@@ -114,10 +114,7 @@ export const Roadmap: React.FC = () => {
       {/* Page Header */}
       <div className="p-4 sm:p-8 border-b border-slate-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight font-display">Product Roadmap</h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Plan, organize and track high-level target milestones for <span className="text-indigo-400 font-semibold">{activeTeam?.name}</span>
-          </p>
+          <h2 className="text-xl font-bold text-white tracking-tight font-display">Product Roadmap</h2>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
