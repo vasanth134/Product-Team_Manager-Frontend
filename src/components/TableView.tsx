@@ -9,7 +9,8 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
-  Search
+  Search,
+  Flag
 } from 'lucide-react';
 
 type SortField = 'title' | 'storyPoints' | 'dueDate';
@@ -20,12 +21,13 @@ export interface TableViewProps {
 }
 
 export const TableView: React.FC<TableViewProps> = ({ onEditTask }) => {
-  const { tasks, activeTeam, createTask, updateTask, deleteTask } = useTeam();
+  const { tasks, activeTeam, milestones, createTask, updateTask, deleteTask } = useTeam();
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterAssignee, setFilterAssignee] = useState<string>('all');
+  const [filterMilestone, setFilterMilestone] = useState<string>('all');
 
   // Sort state
   const [sortField, setSortField] = useState<SortField | null>(null);
@@ -91,6 +93,17 @@ export const TableView: React.FC<TableViewProps> = ({ onEditTask }) => {
       }
     }
 
+    if (filterMilestone !== 'all') {
+      if (filterMilestone === 'none') {
+        result = result.filter(t => !t.milestoneId);
+      } else {
+        result = result.filter(t => {
+          const mId = t.milestoneId ? (typeof t.milestoneId === 'string' ? t.milestoneId : t.milestoneId._id) : null;
+          return mId === filterMilestone;
+        });
+      }
+    }
+
     if (sortField) {
       result.sort((a, b) => {
         let valA: any = a[sortField];
@@ -116,7 +129,7 @@ export const TableView: React.FC<TableViewProps> = ({ onEditTask }) => {
     }
 
     return result;
-  }, [tasks, searchQuery, filterStatus, filterAssignee, sortField, sortOrder, activeTeam?.members]);
+  }, [tasks, searchQuery, filterStatus, filterAssignee, filterMilestone, sortField, sortOrder, activeTeam?.members]);
 
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,7 +206,20 @@ export const TableView: React.FC<TableViewProps> = ({ onEditTask }) => {
               <option value="all">All Assignees</option>
               <option value="unassigned">Unassigned</option>
               {activeTeam?.members.map(m => (
-                <option key={m.user._id} value={m.user._id}>{m.user.name}</option>
+                <option key={m.user._id} value={m.user._id} className="bg-slate-950 text-slate-200">{m.user.name}</option>
+              ))}
+            </select>
+
+            {/* Filter Milestone */}
+            <select
+              value={filterMilestone}
+              onChange={e => setFilterMilestone(e.target.value)}
+              className="flex-1 sm:flex-none px-3 py-2 rounded-xl glass-input text-xs bg-[#0B0F19] text-slate-200 border border-slate-800"
+            >
+              <option value="all">All Milestones</option>
+              <option value="none">No Milestone</option>
+              {milestones.map(m => (
+                <option key={m._id} value={m._id}>{m.title}</option>
               ))}
             </select>
           </div>
@@ -227,7 +253,10 @@ export const TableView: React.FC<TableViewProps> = ({ onEditTask }) => {
                 {/* 4. Assignee Header */}
                 <th className="py-3.5 px-4">Assignee</th>
 
-                {/* 5. Story Points Header */}
+                {/* 5. Milestone Header */}
+                <th className="py-3.5 px-4">Milestone</th>
+
+                {/* 6. Story Points Header */}
                 <th onClick={() => handleSort('storyPoints')} className="py-3.5 px-4 cursor-pointer hover:text-white transition">
                   <div className="flex items-center gap-1.5">
                     <span>Story Points</span>
@@ -307,7 +336,7 @@ export const TableView: React.FC<TableViewProps> = ({ onEditTask }) => {
                             {assigneeUser?.avatarUrl ? (
                               <img
                                 src={assigneeUser.avatarUrl}
-                                alt={assigneeUser.name || 'User'}
+                                  alt={assigneeUser.name || 'User'}
                                 className="w-5 h-5 rounded-full ring-1 ring-slate-800"
                               />
                             ) : (
@@ -320,7 +349,7 @@ export const TableView: React.FC<TableViewProps> = ({ onEditTask }) => {
                               onChange={e => handleFieldUpdate(task._id, 'assignee', e.target.value ? e.target.value : null)}
                               className="bg-transparent text-slate-300 text-xs border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500 max-w-[110px] truncate"
                             >
-                              <option value="" className="bg-slate-950 text-slate-400">Unassigned</option>
+                              <option value="" className="bg-slate-950 text-slate-450">Unassigned</option>
                               {activeTeam?.members.map(m => (
                                 <option key={m.user._id} value={m.user._id} className="bg-slate-950 text-slate-200">{m.user.name}</option>
                               ))}
@@ -328,6 +357,23 @@ export const TableView: React.FC<TableViewProps> = ({ onEditTask }) => {
                           </div>
                         );
                       })()}
+                    </td>
+
+                    {/* 5. Milestone Column (Inline Selector with Flag icon) */}
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-1.5">
+                        <Flag className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                        <select
+                          value={task.milestoneId ? (typeof task.milestoneId === 'string' ? task.milestoneId : task.milestoneId._id) : ''}
+                          onChange={e => handleFieldUpdate(task._id, 'milestoneId', e.target.value ? e.target.value : null)}
+                          className="bg-transparent text-slate-300 text-xs border-0 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500 max-w-[120px] truncate"
+                        >
+                          <option value="" className="bg-slate-950 text-slate-450">No Milestone</option>
+                          {milestones.map(m => (
+                            <option key={m._id} value={m._id} className="bg-slate-950 text-slate-200">{m.title}</option>
+                          ))}
+                        </select>
+                      </div>
                     </td>
 
                     {/* 5. Story Points Column (Inline Editable Input) */}
@@ -370,7 +416,7 @@ export const TableView: React.FC<TableViewProps> = ({ onEditTask }) => {
 
               {filteredAndSortedTasks.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                  <td colSpan={8} className="py-12 text-center text-slate-500">
                     No tasks found matching your filter criteria.
                   </td>
                 </tr>

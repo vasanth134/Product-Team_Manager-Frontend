@@ -327,6 +327,15 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
+    if (updates.milestoneId !== undefined) {
+      if (updates.milestoneId === null) {
+        optimisticUpdates.milestoneId = null;
+      } else if (typeof updates.milestoneId === 'string') {
+        const milestone = milestones.find(m => m._id === updates.milestoneId);
+        optimisticUpdates.milestoneId = milestone ? { _id: milestone._id, title: milestone.title, status: milestone.status } : null;
+      }
+    }
+
     setTasks(prev => prev.map(t => t._id === taskId ? { ...t, ...optimisticUpdates } : t));
 
     try {
