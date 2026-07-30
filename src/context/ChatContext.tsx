@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth, API_BASE_URL } from './AuthContext';
+import { soundManager } from '../utils/soundEffects';
 
 const SOCKET_URL = API_BASE_URL.replace('/api', '');
 
@@ -10,12 +11,22 @@ export interface Attachment {
   name?: string;
 }
 
+export interface CallHistory {
+  callType: 'audio' | 'video';
+  duration: number; // in seconds
+  joinedParticipants: string[];
+  startedAt: string;
+  endedAt: string;
+}
+
 export interface ChatMessage {
   _id: string;
   teamId: string;
   sender: { _id: string; name: string; avatarUrl: string };
   text?: string;
   attachments: Attachment[];
+  isCallHistory?: boolean;
+  callHistory?: CallHistory;
   createdAt: string;
 }
 
@@ -36,6 +47,7 @@ interface ChatContextType {
   remoteStream: MediaStream | null;
   isMuted: boolean;
   isCameraOff: boolean;
+  callError: string | null;
   sendMessage: (text: string, attachments?: Attachment[]) => void;
   uploadFile: (file: File) => Promise<Attachment | null>;
   emitTypingStart: () => void;
@@ -63,6 +75,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
   const [isMuted, setIsMuted]           = useState(false);
   const [isCameraOff, setIsCameraOff]   = useState(false);
+  const [callError, setCallError]       = useState<string | null>(null);
 
   const socketRef  = useRef<Socket | null>(null);
   const pcRef      = useRef<RTCPeerConnection | null>(null);
@@ -71,6 +84,32 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
 
   // Derived array of usernames currently typing
   const typingUsers = Object.values(typingMap);
+
+  // Helper for cleanup
+  const cleanupCall = useCallback(() => {
+    soundManager.stopAll();
+    pcRef.current?.close();
+    pcRef.current = null;
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(t => t.stop());
+      localStreamRef.current = null;
+    }
+    setLocalStream(null);
+    setRemoteStream(null);
+    setInCall(false);
+    setIncomingCall(null);
+    setIsMuted(false);
+    setIsCameraOff(false);
+    peerIdRef.current = '';
+    setCallError(null);
+  }, []);
+
+  // Monitor loss of signaling connection during calls
+  useEffect(() => {
+    if (!connected && inCall) {
+      setCallError('Signaling server connection lost. Trying to reconnect...');
+    }
+  }, [connected, inCall]);
 
   // ── Socket connection ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -112,9 +151,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     socket.on('incoming_call', (data: IncomingCall) => {
       setIncomingCall(data);
       peerIdRef.current = data.from;
+      soundManager.startRingtone();
     });
 
     socket.on('call_accepted', async ({ from }: { from: string }) => {
+      soundManager.stopAll();
       peerIdRef.current = from;
       await createOffer();
     });
@@ -153,6 +194,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     return () => {
       socket.emit('leave_room', { teamId });
       socket.disconnect();
+      soundManager.stopAll();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId, user?.id]);
@@ -219,7 +261,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   // ── WebRTC helpers ─────────────────────────────────────────────────────────
   const setupPeerConnection = useCallback(async (stream?: MediaStream) => {
     const pc = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+      ],
     });
     pcRef.current = pc;
 
@@ -229,6 +277,26 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     pc.onicecandidate = ({ candidate }) => {
       if (candidate) {
         socketRef.current?.emit('webrtc_ice_candidate', { to: peerIdRef.current, candidate });
+      }
+    };
+
+    // Monitor WebRTC Connection State
+    pc.onconnectionstatechange = () => {
+      console.log('RTCPeerConnection state:', pc.connectionState);
+      if (pc.connectionState === 'failed') {
+        setCallError('Network connection failed. Reconnecting or try calling again.');
+      } else if (pc.connectionState === 'disconnected') {
+        setCallError('Network disconnected. Attempting to restore connection...');
+      } else if (pc.connectionState === 'connected') {
+        setCallError(null);
+      }
+    };
+
+    // Monitor ICE Connection State
+    pc.oniceconnectionstatechange = () => {
+      console.log('ICE connection state:', pc.iceConnectionState);
+      if (pc.iceConnectionState === 'failed') {
+        setCallError('ICE negotiation failed. Firewalls might be blocking WebRTC.');
       }
     };
 
@@ -259,27 +327,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     return stream;
   }, []);
 
-  const cleanupCall = useCallback(() => {
-    pcRef.current?.close();
-    pcRef.current = null;
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(t => t.stop());
-      localStreamRef.current = null;
-    }
-    setLocalStream(null);
-    setRemoteStream(null);
-    setInCall(false);
-    setIncomingCall(null);
-    setIsMuted(false);
-    setIsCameraOff(false);
-    peerIdRef.current = '';
-  }, []);
-
   const startCall = useCallback(async (callType: 'audio' | 'video') => {
     try {
+      setCallError(null);
       const stream = await getMedia(callType);
       await setupPeerConnection(stream);
       setInCall(true);
+      soundManager.startRingback();
       socketRef.current?.emit('call_user', { teamId, callerName: user?.name, callType });
     } catch (err) {
       console.error('startCall error:', err);
@@ -290,6 +344,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   const acceptCall = useCallback(async () => {
     if (!incomingCall) return;
     try {
+      setCallError(null);
+      soundManager.stopAll();
       const stream = await getMedia(incomingCall.callType);
       await setupPeerConnection(stream);
       setInCall(true);
@@ -302,6 +358,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
 
   const rejectCall = useCallback(() => {
     if (!incomingCall) return;
+    soundManager.stopAll();
     socketRef.current?.emit('call_rejected', { to: incomingCall.from });
     setIncomingCall(null);
   }, [incomingCall]);
@@ -328,7 +385,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   return (
     <ChatContext.Provider value={{
       messages, typingUsers, connected, uploading, inCall, incomingCall,
-      localStream, remoteStream, isMuted, isCameraOff,
+      localStream, remoteStream, isMuted, isCameraOff, callError,
       sendMessage, uploadFile, emitTypingStart, emitTypingStop, joinRoom,
       startCall, acceptCall, rejectCall, endCall, toggleMute, toggleCamera,
     }}>

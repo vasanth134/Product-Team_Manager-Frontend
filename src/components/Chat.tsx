@@ -10,7 +10,7 @@ import {
 
 // ─── Call Overlay ─────────────────────────────────────────────────────────────
 const CallOverlay: React.FC = () => {
-  const { inCall, localStream, remoteStream, isMuted, isCameraOff, endCall, toggleMute, toggleCamera } = useChat();
+  const { inCall, localStream, remoteStream, isMuted, isCameraOff, endCall, toggleMute, toggleCamera, callError } = useChat();
   const localVideoRef  = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -26,6 +26,14 @@ const CallOverlay: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center gap-6">
+      {/* Network connection error indication */}
+      {callError && (
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-50 bg-red-900/90 border border-red-500/50 text-red-100 px-4 py-2.5 rounded-xl flex items-center gap-2 text-xs font-semibold shadow-2xl backdrop-blur-sm animate-pulse">
+          <WifiOff className="w-4 h-4 text-red-400" />
+          <span>{callError}</span>
+        </div>
+      )}
+
       {/* Video streams */}
       <div className="relative w-full max-w-3xl aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-slate-800">
         {/* Remote (main) */}
@@ -163,9 +171,58 @@ const VoiceRecorder: React.FC<{ onRecorded: (file: File) => void }> = ({ onRecor
   );
 };
 
+// ─── Call History Bubble ──────────────────────────────────────────────────────
+const CallHistoryBubble: React.FC<{ msg: any }> = ({ msg }) => {
+  const { callHistory } = msg;
+  if (!callHistory) return null;
+
+  const isVideo = callHistory.callType === 'video';
+  const isMissed = callHistory.duration === 0;
+  const joinedCount = callHistory.joinedParticipants?.length || 0;
+
+  return (
+    <div className="flex justify-center my-4 w-full">
+      <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 max-w-sm w-full flex items-start gap-3 shadow-lg backdrop-blur-sm">
+        <div className={`p-2.5 rounded-xl flex-shrink-0 flex items-center justify-center ${
+          isMissed
+            ? 'bg-red-500/10 border border-red-500/20 text-red-400'
+            : 'bg-green-500/10 border border-green-500/20 text-green-400'
+        }`}>
+          {isVideo ? <Video className="w-5 h-5" /> : <Phone className="w-5 h-5" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold text-white">
+              {isVideo ? 'Video Call' : 'Voice Call'}
+            </p>
+            <span className="text-[10px] text-slate-500 flex-shrink-0">
+              {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+          <p className="text-sm font-bold text-slate-200 mt-0.5">
+            {isMissed ? 'Missed Call' : `Call Ended · ${callHistory.duration}s`}
+          </p>
+          {joinedCount > 0 && (
+            <div className="mt-2 flex flex-col gap-0.5 border-t border-slate-800/60 pt-1.5">
+              <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Participants ({joinedCount})</span>
+              <span className="text-xs text-slate-300 truncate">
+                {callHistory.joinedParticipants.join(', ')}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Message Bubble ───────────────────────────────────────────────────────────
 const MessageBubble: React.FC<{ msg: any; isOwn: boolean }> = ({ msg, isOwn }) => {
   const [imgExpanded, setImgExpanded] = useState<string | null>(null);
+
+  if (msg.isCallHistory) {
+    return <CallHistoryBubble msg={msg} />;
+  }
 
   return (
     <div className={`flex gap-2.5 mb-3 ${isOwn ? 'flex-row-reverse' : ''}`}>
