@@ -73,7 +73,7 @@ export const Dashboard: React.FC = () => {
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[140px] pointer-events-none"></div>
       
       {/* Header section with high-end typography */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-900/55 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-app pb-6">
         <div>
           <h2 className="text-3xl font-extrabold text-white tracking-tight font-display">
             Workspace Dashboard
@@ -84,9 +84,9 @@ export const Dashboard: React.FC = () => {
         </div>
         
         {/* Dynamic standup summary */}
-        <div className="inline-flex items-center gap-3.5 px-4 py-2.5 rounded-2xl bg-slate-950/30 border border-slate-900/60 backdrop-blur-md">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-450">
-            <Activity className="w-4 h-4" />
+        <div className="inline-flex items-center gap-3 px-3.5 py-2 rounded-xl bg-slate-950/30 border border-app backdrop-blur-md">
+          <div className="w-7.5 h-7.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-450">
+            <Activity className="w-3.5 h-3.5" />
           </div>
           <div className="text-left">
             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Daily Standups</span>
@@ -98,83 +98,83 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* KPI Cards Row - Refined with left accent lines, squircle icons, and tracking-tight numbers */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="flex overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden gap-4 pb-4 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-x-visible sm:pb-0">
         
         {/* Card 1: Completion rate */}
-        <div className="glass-card p-6 rounded-3xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ease-out border border-white/5">
+        <div className="glass-card p-4 sm:p-5 rounded-xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ease-out flex-shrink-0 w-[260px] snap-start sm:w-auto">
           <div className="absolute top-0 left-0 w-[3px] h-full bg-emerald-500/80"></div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-emerald-500/10 transition duration-300"></div>
+          <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-emerald-500/10 transition duration-300"></div>
           <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Completion Rate</span>
-              <h3 className="text-3xl font-black text-white font-display tracking-tight tabular-nums">{summary.completionRate}%</h3>
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest block">Completion Rate</span>
+              <h3 className="text-2xl font-black text-white font-display tracking-tight tabular-nums sm:text-3xl">{summary.completionRate}%</h3>
             </div>
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 group-hover:rotate-6 transition duration-300">
-              <CheckCircle2 className="w-4.5 h-4.5" />
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:rotate-6 transition duration-300 flex-shrink-0">
+              <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-5 text-slate-400 text-[10px] flex justify-between items-center">
+          <div className="mt-3.5 sm:mt-4 text-slate-400 text-[10px] flex justify-between items-center">
             <span>Tasks Resolved</span>
             <span className="font-bold text-slate-200">{summary.completedTasks} / {summary.totalTasks}</span>
           </div>
         </div>
 
         {/* Card 2: Sprint Velocity */}
-        <div className="glass-card p-6 rounded-3xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ease-out border border-white/5">
+        <div className="glass-card p-4 sm:p-5 rounded-xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ease-out flex-shrink-0 w-[260px] snap-start sm:w-auto">
           <div className="absolute top-0 left-0 w-[3px] h-full bg-indigo-500/80"></div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-indigo-550/10 transition duration-300"></div>
+          <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-indigo-550/10 transition duration-300"></div>
           <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Delivered Points</span>
-              <h3 className="text-3xl font-black text-white font-display tracking-tight tabular-nums">{summary.pointsCompletionRate}%</h3>
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest block">Delivered Points</span>
+              <h3 className="text-2xl font-black text-white font-display tracking-tight tabular-nums sm:text-3xl">{summary.pointsCompletionRate}%</h3>
             </div>
-            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-550/25 flex items-center justify-center text-indigo-400 group-hover:rotate-6 transition duration-300">
-              <TrendingUp className="w-4.5 h-4.5" />
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-550/20 flex items-center justify-center text-indigo-400 group-hover:rotate-6 transition duration-300 flex-shrink-0">
+              <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-5 text-slate-400 text-[10px] flex justify-between items-center">
+          <div className="mt-3.5 sm:mt-4 text-slate-400 text-[10px] flex justify-between items-center">
             <span>Sprint Points</span>
             <span className="font-bold text-slate-200">{summary.completedPoints} / {summary.totalPoints}</span>
           </div>
         </div>
 
         {/* Card 3: Active Roadmaps */}
-        <div className="glass-card p-6 rounded-3xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ease-out border border-white/5">
+        <div className="glass-card p-4 sm:p-5 rounded-xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ease-out flex-shrink-0 w-[260px] snap-start sm:w-auto">
           <div className="absolute top-0 left-0 w-[3px] h-full bg-amber-500/80"></div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-amber-550/10 transition duration-300"></div>
+          <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-amber-550/10 transition duration-300"></div>
           <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Active Milestones</span>
-              <h3 className="text-3xl font-black text-white font-display tracking-tight tabular-nums">
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest block">Active Milestones</span>
+              <h3 className="text-2xl font-black text-white font-display tracking-tight tabular-nums sm:text-3xl">
                 {milestones.filter(m => m.status === 'active').length}
               </h3>
             </div>
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-550/25 flex items-center justify-center text-amber-400 group-hover:rotate-6 transition duration-300">
-              <FolderGit2 className="w-4.5 h-4.5" />
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-550/20 flex items-center justify-center text-amber-400 group-hover:rotate-6 transition duration-300 flex-shrink-0">
+              <FolderGit2 className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-5 text-slate-400 text-[10px] flex justify-between items-center">
+          <div className="mt-3.5 sm:mt-4 text-slate-400 text-[10px] flex justify-between items-center">
             <span>Total Milestones</span>
             <span className="font-bold text-slate-200">{milestones.length} configured</span>
           </div>
         </div>
 
         {/* Card 4: High Priority Alert */}
-        <div className="glass-card p-6 rounded-3xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ease-out border border-white/5">
+        <div className="glass-card p-4 sm:p-5 rounded-xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ease-out flex-shrink-0 w-[260px] snap-start sm:w-auto">
           <div className="absolute top-0 left-0 w-[3px] h-full bg-red-500/80"></div>
-          <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-red-550/10 transition duration-300"></div>
+          <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-red-550/10 transition duration-300"></div>
           <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">Blocked Risk Items</span>
-              <h3 className="text-3xl font-black text-white font-display tracking-tight tabular-nums">
+            <div className="space-y-0.5">
+              <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest block">Blocked Risk Items</span>
+              <h3 className="text-2xl font-black text-white font-display tracking-tight tabular-nums sm:text-3xl">
                 {priorityCounts.critical + priorityCounts.high}
               </h3>
             </div>
-            <div className="w-9 h-9 rounded-xl bg-red-500/10 border border-red-550/25 flex items-center justify-center text-red-400 group-hover:rotate-6 transition duration-300">
+            <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-550/25 flex items-center justify-center text-red-400 group-hover:rotate-6 transition duration-300 flex-shrink-0">
               <AlertTriangle className="w-4.5 h-4.5" />
             </div>
           </div>
-          <div className="mt-5 text-slate-400 text-[10px] flex justify-between items-center">
+          <div className="mt-3.5 sm:mt-4 text-slate-400 text-[10px] flex justify-between items-center">
             <span>Critical Priority</span>
             <span className="font-bold text-slate-200">{priorityCounts.critical} item{priorityCounts.critical !== 1 ? 's' : ''}</span>
           </div>
@@ -186,7 +186,7 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         
         {/* Task States - Circular Graph */}
-        <div className="glass-card p-6 rounded-3xl flex flex-col justify-between border border-white/5 min-h-[360px]">
+        <div className="glass-card p-5 sm:p-6 rounded-xl flex flex-col justify-between min-h-[360px]">
           <div>
             <h4 className="font-bold text-sm text-white font-display tracking-wide">Task States</h4>
             <p className="text-[10px] text-slate-400 mt-0.5">Status breakdown of current sprints</p>
@@ -258,7 +258,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Member Workload - Redesigned with squircle avatars, grid texture, and premium progress bars */}
-        <div className="glass-card p-6 rounded-3xl border border-white/5 lg:col-span-2 flex flex-col justify-between min-h-[360px]">
+        <div className="glass-card p-5 sm:p-6 rounded-xl lg:col-span-2 flex flex-col justify-between min-h-[360px]">
           <div>
             <h4 className="font-bold text-sm text-white font-display tracking-wide">Teammate Workloads</h4>
             <p className="text-[10px] text-slate-400 mt-0.5">Assigned tasks and story point balance per developer</p>
@@ -342,7 +342,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Milestones Progress - Redesigned card list with timeline visualizers */}
-      <div className="glass-card p-6 rounded-3xl border border-white/5">
+      <div className="glass-card p-5 sm:p-6 rounded-xl">
         <div className="flex items-center gap-2 mb-6 border-b border-slate-900/50 pb-4">
           <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
             <Layers className="w-4 h-4" />
@@ -364,17 +364,17 @@ export const Dashboard: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {milestones.map(m => (
-              <div key={m.id} className="p-5 rounded-2xl bg-slate-950/20 border border-slate-900/50 space-y-4 hover:border-slate-800 transition duration-300 flex flex-col justify-between">
+              <div key={m.id} className="p-4 rounded-xl bg-slate-950/20 border border-app space-y-3.5 hover:border-slate-800 transition duration-300 flex flex-col justify-between">
                 <div className="flex justify-between items-start gap-4">
                   <div className="truncate">
                     <h5 className="font-bold text-xs text-slate-200 truncate group-hover:text-indigo-400" title={m.title}>
                       {m.title}
                     </h5>
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1 block">
+                    <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest mt-1 block">
                       Tasks: {m.completedTasks} / {m.totalTasks}
                     </span>
                   </div>
-                  <span className={`px-2.5 py-0.5 rounded-lg text-[8px] font-extrabold uppercase tracking-wider border ${m.status === 'completed' ? 'bg-emerald-950/20 text-emerald-400 border-emerald-900/40' : m.status === 'active' ? 'bg-indigo-950/20 text-indigo-400 border-indigo-900/40' : 'bg-slate-900/30 text-slate-400 border-slate-800'}`}>
+                  <span className={`px-2.5 py-0.5 rounded-lg text-[8px] font-extrabold uppercase tracking-wider border ${m.status === 'completed' ? 'bg-emerald-950/30 text-emerald-400 border-emerald-900/40' : m.status === 'active' ? 'bg-indigo-950/40 text-indigo-400 border-indigo-900/40' : 'bg-slate-900/30 text-slate-400 border-slate-800'}`}>
                     {m.status}
                   </span>
                 </div>

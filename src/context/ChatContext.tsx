@@ -42,12 +42,18 @@ interface ChatContextType {
   connected: boolean;
   uploading: boolean;
   inCall: boolean;
+  callType: 'audio' | 'video' | null;
   incomingCall: IncomingCall | null;
   localStream: MediaStream | null;
   remoteStream: MediaStream | null;
+  remoteStreams: Record<string, { stream: MediaStream; userName: string }>;
   isMuted: boolean;
   isCameraOff: boolean;
+  isScreenSharing: boolean;
   callError: string | null;
+  activeCallStatus: { callType: 'audio' | 'video'; participants: string[] } | null;
+  isMinimized: boolean;
+  setIsMinimized: (val: boolean) => void;
   sendMessage: (text: string, attachments?: Attachment[]) => void;
   uploadFile: (file: File) => Promise<Attachment | null>;
   emitTypingStart: () => void;
@@ -56,31 +62,38 @@ interface ChatContextType {
   startCall: (callType: 'audio' | 'video') => void;
   acceptCall: () => void;
   rejectCall: () => void;
+  joinActiveCall: () => void;
   endCall: () => void;
   toggleMute: () => void;
   toggleCamera: () => void;
+  toggleScreenShare: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string }> = ({ children, teamId }) => {
   const { user, token } = useAuth();
-  const [messages, setMessages]         = useState<ChatMessage[]>([]);
-  const [typingMap, setTypingMap]       = useState<Record<string, string>>({});
-  const [connected, setConnected]       = useState(false);
-  const [uploading, setUploading]       = useState(false);
-  const [inCall, setInCall]             = useState(false);
-  const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
-  const [localStream, setLocalStream]   = useState<MediaStream | null>(null);
-  const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-  const [isMuted, setIsMuted]           = useState(false);
-  const [isCameraOff, setIsCameraOff]   = useState(false);
-  const [callError, setCallError]       = useState<string | null>(null);
+  const [messages, setMessages]                 = useState<ChatMessage[]>([]);
+  const [typingMap, setTypingMap]               = useState<Record<string, string>>({});
+  const [connected, setConnected]               = useState(false);
+  const [uploading, setUploading]               = useState(false);
+  const [inCall, setInCall]                     = useState(false);
+  const [callType, setCallType]                 = useState<'audio' | 'video' | null>(null);
+  const [incomingCall, setIncomingCall]         = useState<IncomingCall | null>(null);
+  const [localStream, setLocalStream]           = useState<MediaStream | null>(null);
+  const [remoteStream, setRemoteStream]         = useState<MediaStream | null>(null);
+  const [remoteStreams, setRemoteStreams]       = useState<Record<string, { stream: MediaStream; userName: string }>>({});
+  const [isMuted, setIsMuted]                   = useState(false);
+  const [isCameraOff, setIsCameraOff]           = useState(false);
+  const [isScreenSharing, setIsScreenSharing]   = useState(false);
+  const [callError, setCallError]               = useState<string | null>(null);
+  const [activeCallStatus, setActiveCallStatus] = useState<{ callType: 'audio' | 'video'; participants: string[] } | null>(null);
+  const [isMinimized, setIsMinimized]           = useState(false);
 
   const socketRef  = useRef<Socket | null>(null);
-  const pcRef      = useRef<RTCPeerConnection | null>(null);
-  const peerIdRef  = useRef<string>(''); // remote socket ID for signaling
+  const pcsRef     = useRef<Map<string, RTCPeerConnection>>(new Map());
   const localStreamRef = useRef<MediaStream | null>(null);
+  const screenStreamRef = useRef<MediaStream | null>(null);
 
   // Derived array of usernames currently typing
   const typingUsers = Object.values(typingMap);
@@ -88,20 +101,33 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   // Helper for cleanup
   const cleanupCall = useCallback(() => {
     soundManager.stopAll();
-    pcRef.current?.close();
-    pcRef.current = null;
+    
+    // Close all active peer connections
+    for (const [_, pc] of pcsRef.current) {
+      pc.close();
+    }
+    pcsRef.current.clear();
+
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(t => t.stop());
       localStreamRef.current = null;
     }
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach(t => t.stop());
+      screenStreamRef.current = null;
+    }
+
     setLocalStream(null);
     setRemoteStream(null);
+    setRemoteStreams({});
     setInCall(false);
+    setCallType(null);
     setIncomingCall(null);
     setIsMuted(false);
     setIsCameraOff(false);
-    peerIdRef.current = '';
+    setIsScreenSharing(false);
     setCallError(null);
+    setIsMinimized(false);
   }, []);
 
   // Monitor loss of signaling connection during calls
@@ -110,6 +136,79 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
       setCallError('Signaling server connection lost. Trying to reconnect...');
     }
   }, [connected, inCall]);
+
+  // ── WebRTC helpers ─────────────────────────────────────────────────────────
+  const setupPeerConnection = useCallback(async (peerSocketId: string, stream?: MediaStream) => {
+    // Close existing connection if any
+    if (pcsRef.current.has(peerSocketId)) {
+      pcsRef.current.get(peerSocketId)?.close();
+      pcsRef.current.delete(peerSocketId);
+    }
+
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+      ],
+    });
+    pcsRef.current.set(peerSocketId, pc);
+
+    const mediaStream = stream || localStreamRef.current;
+    mediaStream?.getTracks().forEach(track => pc.addTrack(track, mediaStream));
+
+    pc.onicecandidate = ({ candidate }) => {
+      if (candidate) {
+        socketRef.current?.emit('webrtc_ice_candidate', { to: peerSocketId, candidate });
+      }
+    };
+
+    // Monitor WebRTC Connection State
+    pc.onconnectionstatechange = () => {
+      console.log(`RTCPeerConnection state for ${peerSocketId}:`, pc.connectionState);
+      if (pc.connectionState === 'failed') {
+        setCallError('Network connection failed with a participant.');
+      } else if (pc.connectionState === 'disconnected') {
+        setRemoteStreams(prev => {
+          const next = { ...prev };
+          delete next[peerSocketId];
+          return next;
+        });
+      }
+    };
+
+    const newRemote = new MediaStream();
+    pc.ontrack = (event) => {
+      event.streams[0].getTracks().forEach(track => {
+        if (!newRemote.getTracks().some(t => t.id === track.id)) {
+          newRemote.addTrack(track);
+        }
+      });
+      
+      setRemoteStreams(prev => ({
+        ...prev,
+        [peerSocketId]: {
+          stream: newRemote,
+          userName: prev[peerSocketId]?.userName || 'Participant'
+        }
+      }));
+
+      // Keep single remoteStream updated for backward compat
+      setRemoteStream(new MediaStream(newRemote.getTracks()));
+    };
+
+    return pc;
+  }, []);
+
+  const createOffer = useCallback(async (peerSocketId: string) => {
+    let pc = pcsRef.current.get(peerSocketId);
+    if (!pc) pc = await setupPeerConnection(peerSocketId);
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socketRef.current?.emit('webrtc_offer', { to: peerSocketId, sdp: offer });
+  }, [setupPeerConnection]);
 
   // ── Socket connection ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -147,17 +246,58 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
       });
     });
 
+    // ── Active Call Room Indicators ──────────────────────────────────────────
+    socket.on('active_call_update', (status: { callType: 'audio' | 'video'; participants: string[] } | null) => {
+      setActiveCallStatus(status);
+      if (!status && inCall) {
+        cleanupCall();
+      }
+    });
+
     // ── WebRTC Signaling events ──────────────────────────────────────────────
     socket.on('incoming_call', (data: IncomingCall) => {
       setIncomingCall(data);
-      peerIdRef.current = data.from;
       soundManager.startRingtone();
     });
 
-    socket.on('call_accepted', async ({ from }: { from: string }) => {
+    socket.on('call_accepted', async ({ from, callerName }: { from: string; callerName: string }) => {
       soundManager.stopAll();
-      peerIdRef.current = from;
-      await createOffer();
+      setRemoteStreams(prev => ({
+        ...prev,
+        [from]: { stream: new MediaStream(), userName: callerName }
+      }));
+      await setupPeerConnection(from);
+      await createOffer(from);
+    });
+
+    socket.on('peer_joined_call', async ({ socketId, userName }: { socketId: string; userName: string }) => {
+      setRemoteStreams(prev => ({
+        ...prev,
+        [socketId]: { stream: new MediaStream(), userName }
+      }));
+      await setupPeerConnection(socketId);
+      await createOffer(socketId);
+    });
+
+    socket.on('call_joined_success', async ({ peers, callType: incomingType }: { peers: Array<{ socketId: string; userName: string }>; callType: 'audio' | 'video' }) => {
+      try {
+        setCallError(null);
+        const stream = await getMedia(incomingType);
+        setInCall(true);
+        setCallType(incomingType);
+        setIncomingCall(null);
+
+        for (const peer of peers) {
+          setRemoteStreams(prev => ({
+            ...prev,
+            [peer.socketId]: { stream: new MediaStream(), userName: peer.userName }
+          }));
+          await setupPeerConnection(peer.socketId, stream);
+          await createOffer(peer.socketId);
+        }
+      } catch (err) {
+        console.error("Failed to setup streams on join call:", err);
+      }
     });
 
     socket.on('call_rejected', () => {
@@ -166,29 +306,43 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     });
 
     socket.on('webrtc_offer', async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
-      peerIdRef.current = from;
-      if (!pcRef.current) await setupPeerConnection();
-      await pcRef.current!.setRemoteDescription(new RTCSessionDescription(sdp));
-      const answer = await pcRef.current!.createAnswer();
-      await pcRef.current!.setLocalDescription(answer);
+      if (!pcsRef.current.has(from)) {
+        await setupPeerConnection(from);
+      }
+      const pc = pcsRef.current.get(from)!;
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
       socket.emit('webrtc_answer', { to: from, sdp: answer });
     });
 
-    socket.on('webrtc_answer', async ({ sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
-      await pcRef.current?.setRemoteDescription(new RTCSessionDescription(sdp));
+    socket.on('webrtc_answer', async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
+      const pc = pcsRef.current.get(from);
+      if (pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      }
     });
 
-    socket.on('webrtc_ice_candidate', async ({ candidate }: { candidate: RTCIceCandidateInit }) => {
+    socket.on('webrtc_ice_candidate', async ({ from, candidate }: { from: string; candidate: RTCIceCandidateInit }) => {
       try {
-        await pcRef.current?.addIceCandidate(new RTCIceCandidate(candidate));
+        const pc = pcsRef.current.get(from);
+        if (pc) {
+          await pc.addIceCandidate(new RTCIceCandidate(candidate));
+        }
       } catch { /* ignore */ }
     });
 
     socket.on('call_ended', ({ from }: { from: string }) => {
-      // Only end the call if the signal originates from our call partner or ourselves
-      if (from === peerIdRef.current || from === socketRef.current?.id) {
-        cleanupCall();
+      const pc = pcsRef.current.get(from);
+      if (pc) {
+        pc.close();
+        pcsRef.current.delete(from);
       }
+      setRemoteStreams(prev => {
+        const next = { ...prev };
+        delete next[from];
+        return next;
+      });
     });
 
     return () => {
@@ -258,65 +412,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     socketRef.current?.emit('join_room', { teamId: newTeamId, userId: user?.id, userName: user?.name });
   }, [user?.id, user?.name]);
 
-  // ── WebRTC helpers ─────────────────────────────────────────────────────────
-  const setupPeerConnection = useCallback(async (stream?: MediaStream) => {
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:stun3.l.google.com:19302' },
-        { urls: 'stun:stun4.l.google.com:19302' },
-      ],
-    });
-    pcRef.current = pc;
-
-    const mediaStream = stream || localStreamRef.current;
-    mediaStream?.getTracks().forEach(track => pc.addTrack(track, mediaStream));
-
-    pc.onicecandidate = ({ candidate }) => {
-      if (candidate) {
-        socketRef.current?.emit('webrtc_ice_candidate', { to: peerIdRef.current, candidate });
-      }
-    };
-
-    // Monitor WebRTC Connection State
-    pc.onconnectionstatechange = () => {
-      console.log('RTCPeerConnection state:', pc.connectionState);
-      if (pc.connectionState === 'failed') {
-        setCallError('Network connection failed. Reconnecting or try calling again.');
-      } else if (pc.connectionState === 'disconnected') {
-        setCallError('Network disconnected. Attempting to restore connection...');
-      } else if (pc.connectionState === 'connected') {
-        setCallError(null);
-      }
-    };
-
-    // Monitor ICE Connection State
-    pc.oniceconnectionstatechange = () => {
-      console.log('ICE connection state:', pc.iceConnectionState);
-      if (pc.iceConnectionState === 'failed') {
-        setCallError('ICE negotiation failed. Firewalls might be blocking WebRTC.');
-      }
-    };
-
-    const newRemote = new MediaStream();
-    setRemoteStream(newRemote);
-    pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach(track => newRemote.addTrack(track));
-      setRemoteStream(new MediaStream(newRemote.getTracks()));
-    };
-
-    return pc;
-  }, []);
-
-  const createOffer = useCallback(async () => {
-    if (!pcRef.current) await setupPeerConnection();
-    const offer = await pcRef.current!.createOffer();
-    await pcRef.current!.setLocalDescription(offer);
-    socketRef.current?.emit('webrtc_offer', { to: peerIdRef.current, sdp: offer });
-  }, [setupPeerConnection]);
-
   const getMedia = useCallback(async (callType: 'audio' | 'video') => {
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
@@ -327,34 +422,34 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     return stream;
   }, []);
 
-  const startCall = useCallback(async (callType: 'audio' | 'video') => {
+  const startCall = useCallback(async (selectedType: 'audio' | 'video') => {
     try {
       setCallError(null);
-      const stream = await getMedia(callType);
-      await setupPeerConnection(stream);
+      await getMedia(selectedType);
       setInCall(true);
+      setCallType(selectedType);
       soundManager.startRingback();
-      socketRef.current?.emit('call_user', { teamId, callerName: user?.name, callType });
+      socketRef.current?.emit('call_user', { teamId, callerName: user?.name, callType: selectedType });
     } catch (err) {
       console.error('startCall error:', err);
       alert('Could not access camera/microphone. Please check permissions.');
     }
-  }, [teamId, user?.name, getMedia, setupPeerConnection]);
+  }, [teamId, user?.name, getMedia]);
 
   const acceptCall = useCallback(async () => {
     if (!incomingCall) return;
     try {
       setCallError(null);
       soundManager.stopAll();
-      const stream = await getMedia(incomingCall.callType);
-      await setupPeerConnection(stream);
+      await getMedia(incomingCall.callType);
       setInCall(true);
+      setCallType(incomingCall.callType);
       setIncomingCall(null);
       socketRef.current?.emit('call_accepted', { to: incomingCall.from, callerName: user?.name });
     } catch (err) {
       console.error('acceptCall error:', err);
     }
-  }, [incomingCall, getMedia, setupPeerConnection, user?.name]);
+  }, [incomingCall, getMedia, user?.name]);
 
   const rejectCall = useCallback(() => {
     if (!incomingCall) return;
@@ -362,6 +457,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     socketRef.current?.emit('call_rejected', { to: incomingCall.from });
     setIncomingCall(null);
   }, [incomingCall]);
+
+  const joinActiveCall = useCallback(() => {
+    setCallError(null);
+    socketRef.current?.emit('join_active_call', { teamId });
+  }, [teamId]);
 
   const endCall = useCallback(() => {
     socketRef.current?.emit('call_ended', { teamId });
@@ -375,19 +475,122 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     setIsMuted(m => !m);
   }, []);
 
-  const toggleCamera = useCallback(() => {
-    if (localStreamRef.current) {
-      localStreamRef.current.getVideoTracks().forEach(t => { t.enabled = !t.enabled; });
+  const toggleCamera = useCallback(async () => {
+    if (isCameraOff) {
+      // Turn camera ON
+      let videoTrack = localStreamRef.current?.getVideoTracks()[0];
+      if (!videoTrack) {
+        try {
+          // Camera track is missing (e.g. call started as audio only), fetch it dynamically
+          const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          videoTrack = cameraStream.getVideoTracks()[0];
+          
+          if (localStreamRef.current) {
+            localStreamRef.current.addTrack(videoTrack);
+            setLocalStream(new MediaStream(localStreamRef.current.getTracks()));
+          }
+
+          // Distribute track to all active peer connections
+          for (const [peerId, pc] of pcsRef.current) {
+            const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+            if (sender) {
+              await sender.replaceTrack(videoTrack);
+            } else {
+              pc.addTrack(videoTrack, localStreamRef.current!);
+              // Renegotiate offer
+              const offer = await pc.createOffer();
+              await pc.setLocalDescription(offer);
+              socketRef.current?.emit('webrtc_offer', { to: peerId, sdp: offer });
+            }
+          }
+        } catch (err) {
+          console.error("Failed to acquire camera track:", err);
+          alert("Could not access camera. Please check permissions.");
+          return;
+        }
+      } else {
+        videoTrack.enabled = true;
+      }
+      setIsCameraOff(false);
+    } else {
+      // Turn camera OFF
+      const videoTrack = localStreamRef.current?.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = false;
+      }
+      setIsCameraOff(true);
     }
-    setIsCameraOff(c => !c);
-  }, []);
+  }, [isCameraOff]);
+
+  const toggleScreenShare = useCallback(async () => {
+    if (isScreenSharing) {
+      // Stop Screen Sharing
+      if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach(t => t.stop());
+        screenStreamRef.current = null;
+      }
+      setIsScreenSharing(false);
+
+      // Restore camera track
+      const originalTrack = localStreamRef.current?.getVideoTracks()[0];
+      for (const [_, pc] of pcsRef.current) {
+        const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+        if (sender) {
+          await sender.replaceTrack(originalTrack || null);
+        }
+      }
+    } else {
+      // Start Screen Sharing
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        screenStreamRef.current = stream;
+        setIsScreenSharing(true);
+
+        const screenTrack = stream.getVideoTracks()[0];
+
+        // Replace/Add track in active peer connections
+        for (const [peerId, pc] of pcsRef.current) {
+          const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+          if (sender) {
+            await sender.replaceTrack(screenTrack);
+          } else {
+            pc.addTrack(screenTrack, stream);
+            // Send offer
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socketRef.current?.emit('webrtc_offer', { to: peerId, sdp: offer });
+          }
+        }
+
+        // Detect stop sharing click from browser native panel
+        screenTrack.onended = () => {
+          if (screenStreamRef.current) {
+            screenStreamRef.current.getTracks().forEach(t => t.stop());
+            screenStreamRef.current = null;
+          }
+          setIsScreenSharing(false);
+
+          const originalTrack = localStreamRef.current?.getVideoTracks()[0];
+          for (const [_, pc] of pcsRef.current) {
+            const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+            if (sender) {
+              sender.replaceTrack(originalTrack || null);
+            }
+          }
+        };
+      } catch (err) {
+        console.error("Screen sharing cancelled or failed:", err);
+      }
+    }
+  }, [isScreenSharing]);
 
   return (
     <ChatContext.Provider value={{
-      messages, typingUsers, connected, uploading, inCall, incomingCall,
-      localStream, remoteStream, isMuted, isCameraOff, callError,
+      messages, typingUsers, connected, uploading, inCall, callType, incomingCall,
+      localStream, remoteStream, remoteStreams, isMuted, isCameraOff, isScreenSharing,
+      callError, activeCallStatus, isMinimized, setIsMinimized,
       sendMessage, uploadFile, emitTypingStart, emitTypingStop, joinRoom,
-      startCall, acceptCall, rejectCall, endCall, toggleMute, toggleCamera,
+      startCall, acceptCall, rejectCall, joinActiveCall, endCall, toggleMute, toggleCamera, toggleScreenShare,
     }}>
       {children}
     </ChatContext.Provider>

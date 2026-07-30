@@ -291,7 +291,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, isO
       {/* CREATE TEAM MODAL */}
       {showCreateTeamModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card w-full max-w-md p-6 rounded-3xl animate-in fade-in zoom-in-95 duration-150 border border-white/5">
+          <div className="glass-card w-full max-w-md p-6 rounded-xl animate-in fade-in zoom-in-95 duration-150">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-900">
               <h3 className="font-bold text-base text-white font-display">Create Workspace</h3>
               <button onClick={() => setShowCreateTeamModal(false)} className="text-slate-400 hover:text-white p-1 cursor-pointer">
@@ -349,7 +349,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, isO
       {/* INVITE MEMBER MODAL */}
       {showInviteModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card w-full max-w-md p-6 rounded-3xl animate-in fade-in zoom-in-95 duration-150 border border-white/5">
+          <div className="glass-card w-full max-w-md p-6 rounded-xl animate-in fade-in zoom-in-95 duration-150">
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-900">
               <h3 className="font-bold text-base text-white font-display">Invite Member</h3>
               <button onClick={() => setShowInviteModal(false)} className="text-slate-400 hover:text-white p-1 cursor-pointer">

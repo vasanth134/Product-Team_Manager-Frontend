@@ -127,9 +127,9 @@ const WorkspaceContainer: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#070A0F] relative">
+    <div className="flex h-screen w-screen overflow-hidden bg-app relative">
       {/* Mobile Top Header */}
-      <header className="md:hidden h-14 w-full flex items-center justify-between px-4 border-b border-slate-900/60 bg-[#070A0F]/80 backdrop-blur-md z-30 absolute top-0 left-0">
+      <header className="md:hidden h-14 w-full flex items-center justify-between px-4 border-b border-app bg-[var(--bg-base)]/80 backdrop-blur-md z-30 absolute top-0 left-0">
         <div className="flex items-center gap-2">
           <button 
             onClick={() => setShowMobileSidebar(true)}

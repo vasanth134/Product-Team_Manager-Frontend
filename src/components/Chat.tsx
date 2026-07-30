@@ -5,27 +5,60 @@ import { ChatProvider, useChat } from '../context/ChatContext';
 import type { Attachment } from '../context/ChatContext';
 import {
   Send, Paperclip, Mic, MicOff, Video, VideoOff, Phone, PhoneOff,
-  PhoneCall, StopCircle, Image as ImageIcon, Volume2, Wifi, WifiOff, X
+  PhoneCall, StopCircle, Image as ImageIcon, Volume2, Wifi, WifiOff, X,
+  Minimize2, Maximize2, MonitorUp
 } from 'lucide-react';
+
+const RemoteVideoPlayer: React.FC<{ stream: MediaStream }> = ({ stream }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(err => console.warn("Remote video play error:", err));
+    }
+  }, [stream]);
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      playsInline
+      className="w-full h-full object-cover"
+    />
+  );
+};
 
 // ─── Call Overlay ─────────────────────────────────────────────────────────────
 const CallOverlay: React.FC = () => {
-  const { inCall, localStream, remoteStream, isMuted, isCameraOff, endCall, toggleMute, toggleCamera, callError } = useChat();
+  const {
+    inCall, callType, localStream, remoteStreams, isMuted, isCameraOff, isScreenSharing,
+    endCall, toggleMute, toggleCamera, toggleScreenShare, callError, isMinimized, setIsMinimized, activeCallStatus
+  } = useChat();
+
   const localVideoRef  = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (localVideoRef.current && localStream) localVideoRef.current.srcObject = localStream;
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+      localVideoRef.current.play().catch(() => {});
+    }
   }, [localStream]);
 
-  useEffect(() => {
-    if (remoteVideoRef.current && remoteStream) remoteVideoRef.current.srcObject = remoteStream;
-  }, [remoteStream]);
+  if (!inCall || isMinimized) return null;
 
-  if (!inCall) return null;
+  const remotePeers = Object.entries(remoteStreams);
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center gap-6">
+      {/* Minimize Button */}
+      <button
+        onClick={() => setIsMinimized(true)}
+        className="absolute top-6 right-6 p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition border border-slate-700/50 shadow-lg backdrop-blur"
+        title="Minimize Call"
+      >
+        <Minimize2 className="w-5 h-5" />
+      </button>
+
       {/* Network connection error indication */}
       {callError && (
         <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-50 bg-red-900/90 border border-red-500/50 text-red-100 px-4 py-2.5 rounded-xl flex items-center gap-2 text-xs font-semibold shadow-2xl backdrop-blur-sm animate-pulse">
@@ -34,24 +67,71 @@ const CallOverlay: React.FC = () => {
         </div>
       )}
 
-      {/* Video streams */}
-      <div className="relative w-full max-w-3xl aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-slate-800">
-        {/* Remote (main) */}
-        <video ref={remoteVideoRef} autoPlay playsInline
-          className="w-full h-full object-cover"
-        />
-        {!remoteStream && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 gap-3">
-            <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-            <span className="text-xs">Connecting to peer…</span>
+      {/* Video & Audio displays */}
+      <div className="relative w-full max-w-4xl aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 flex items-center justify-center p-4">
+        {callType === 'audio' ? (
+          // Audio Call UI
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="relative">
+              <div className="absolute inset-0 bg-indigo-500/10 rounded-full animate-ping scale-150" />
+              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white text-3xl font-extrabold shadow-lg border border-indigo-400/30">
+                🎙️
+              </div>
+            </div>
+            <div>
+              <p className="text-lg font-bold text-white">Active Room Audio Call</p>
+              <p className="text-xs text-indigo-400 mt-1">
+                In Call: {activeCallStatus?.participants.join(', ') || 'Connecting…'}
+              </p>
+            </div>
+          </div>
+        ) : (
+          // Video call mesh grid
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full h-full p-2">
+            {remotePeers.length === 0 ? (
+              <div className="relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800 flex flex-col items-center justify-center text-slate-500 gap-3 w-full h-full col-span-2">
+                <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+                <span className="text-xs">Waiting for participants to connect…</span>
+              </div>
+            ) : (
+              remotePeers.map(([sid, info]) => {
+                const hasVideo = info.stream.getVideoTracks().length > 0;
+                return (
+                  <div key={sid} className="relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center w-full h-full aspect-video">
+                    {hasVideo ? (
+                      <RemoteVideoPlayer stream={info.stream} />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-white text-xl font-bold border border-slate-700">
+                          {info.userName.slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className="text-xs text-slate-400">{info.userName}</span>
+                      </div>
+                    )}
+                    <div className="absolute bottom-3 left-3 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] text-slate-300 font-semibold border border-slate-800">
+                      {info.userName}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         )}
-        {/* Local (PiP) */}
-        <div className="absolute bottom-4 right-4 w-36 h-24 rounded-xl overflow-hidden border-2 border-indigo-500/40 shadow-xl bg-slate-950">
-          <video ref={localVideoRef} autoPlay playsInline muted
-            className="w-full h-full object-cover"
-          />
-        </div>
+
+        {/* Local Video PiP overlay (only for Video Calls) */}
+        {callType === 'video' && (
+          <div className="absolute bottom-6 right-6 w-40 h-28 rounded-xl overflow-hidden border-2 border-indigo-500/40 shadow-2xl bg-slate-950 z-10 flex items-center justify-center">
+            {!isCameraOff ? (
+              <video ref={localVideoRef} autoPlay playsInline muted
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full w-full bg-slate-900 text-slate-500 text-[10px]">
+                <span>Camera Off</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Controls */}
@@ -64,6 +144,26 @@ const CallOverlay: React.FC = () => {
           {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
         </button>
 
+        {callType === 'video' && (
+          <button
+            onClick={toggleCamera}
+            className={`w-14 h-14 rounded-full flex items-center justify-center transition text-white shadow-lg ${isCameraOff ? 'bg-red-600 hover:bg-red-500' : 'bg-slate-700 hover:bg-slate-600'}`}
+            title={isCameraOff ? 'Enable Camera' : 'Disable Camera'}
+          >
+            {isCameraOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
+          </button>
+        )}
+
+        {callType === 'video' && (
+          <button
+            onClick={toggleScreenShare}
+            className={`w-14 h-14 rounded-full flex items-center justify-center transition text-white shadow-lg ${isScreenSharing ? 'bg-green-600 hover:bg-green-500' : 'bg-slate-700 hover:bg-slate-600'}`}
+            title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen'}
+          >
+            <MonitorUp className="w-5 h-5" />
+          </button>
+        )}
+
         <button
           onClick={endCall}
           className="w-16 h-16 rounded-full bg-red-600 hover:bg-red-500 flex items-center justify-center transition shadow-xl"
@@ -71,17 +171,81 @@ const CallOverlay: React.FC = () => {
         >
           <PhoneOff className="w-6 h-6 text-white" />
         </button>
-
-        <button
-          onClick={toggleCamera}
-          className={`w-14 h-14 rounded-full flex items-center justify-center transition text-white shadow-lg ${isCameraOff ? 'bg-red-600 hover:bg-red-500' : 'bg-slate-700 hover:bg-slate-600'}`}
-          title={isCameraOff ? 'Enable Camera' : 'Disable Camera'}
-        >
-          {isCameraOff ? <VideoOff className="w-5 h-5" /> : <Video className="w-5 h-5" />}
-        </button>
       </div>
 
       <p className="text-xs text-slate-500">Peer-to-peer encrypted call</p>
+    </div>
+  );
+};
+
+// ─── Minimized Call Widget ──────────────────────────────────────────────────
+const MinimizedCallWidget: React.FC = () => {
+  const {
+    inCall, callType, isMuted, isCameraOff, isScreenSharing, endCall,
+    toggleMute, toggleCamera, toggleScreenShare, isMinimized, setIsMinimized, activeCallStatus
+  } = useChat();
+
+  if (!inCall || !isMinimized) return null;
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 bg-slate-950/95 border border-indigo-500/30 rounded-2xl shadow-2xl p-4 flex flex-col gap-3 w-80 backdrop-blur-md animate-fade-in">
+      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-ping" />
+          <span className="text-xs font-bold text-slate-200">
+            {callType === 'video' ? 'Video Call ongoing' : 'Audio Call ongoing'}
+          </span>
+        </div>
+        <button
+          onClick={() => setIsMinimized(false)}
+          className="p-1 rounded bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
+          title="Maximize"
+        >
+          <Maximize2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      
+      <p className="text-[10px] text-slate-400 truncate">
+        Participants: {activeCallStatus?.participants.join(', ') || 'Connecting…'}
+      </p>
+
+      <div className="flex items-center justify-between gap-2 mt-1">
+        <button
+          onClick={toggleMute}
+          className={`p-2 rounded-xl text-white transition flex-1 flex items-center justify-center ${isMuted ? 'bg-red-600 hover:bg-red-500' : 'bg-slate-850 hover:bg-slate-800'}`}
+          title={isMuted ? 'Unmute' : 'Mute'}
+        >
+          {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+        </button>
+
+        {callType === 'video' && (
+          <>
+            <button
+              onClick={toggleCamera}
+              className={`p-2 rounded-xl text-white transition flex-1 flex items-center justify-center ${isCameraOff ? 'bg-red-600 hover:bg-red-500' : 'bg-slate-850 hover:bg-slate-800'}`}
+              title={isCameraOff ? 'Camera On' : 'Camera Off'}
+            >
+              {isCameraOff ? <VideoOff className="w-4 h-4" /> : <Video className="w-4 h-4" />}
+            </button>
+
+            <button
+              onClick={toggleScreenShare}
+              className={`p-2 rounded-xl text-white transition flex-1 flex items-center justify-center ${isScreenSharing ? 'bg-green-600 hover:bg-green-500' : 'bg-slate-850 hover:bg-slate-800'}`}
+              title={isScreenSharing ? 'Stop Share' : 'Share Screen'}
+            >
+              <MonitorUp className="w-4 h-4" />
+            </button>
+          </>
+        )}
+
+        <button
+          onClick={endCall}
+          className="p-2 rounded-xl bg-red-600 hover:bg-red-500 text-white flex-1 flex items-center justify-center transition"
+          title="Hang Up"
+        >
+          <PhoneOff className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 };
@@ -286,7 +450,7 @@ const ChatInner: React.FC = () => {
   const {
     messages, typingUsers, connected, uploading,
     sendMessage, uploadFile, emitTypingStart, emitTypingStop,
-    startCall, inCall,
+    startCall, inCall, joinActiveCall, activeCallStatus,
   } = useChat();
 
   const [text, setText]               = useState('');
@@ -355,22 +519,35 @@ const ChatInner: React.FC = () => {
 
         {/* Call buttons */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => startCall('audio')}
-            disabled={inCall}
-            className="p-2 rounded-xl text-slate-400 hover:text-green-400 hover:bg-green-950/20 border border-transparent hover:border-green-800/50 transition disabled:opacity-40"
-            title="Audio Call"
-          >
-            <Phone className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => startCall('video')}
-            disabled={inCall}
-            className="p-2 rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-indigo-950/20 border border-transparent hover:border-indigo-800/50 transition disabled:opacity-40"
-            title="Video Call"
-          >
-            <Video className="w-4 h-4" />
-          </button>
+          {activeCallStatus && !inCall ? (
+            <button
+              onClick={joinActiveCall}
+              className="px-3.5 py-1.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold text-xs transition shadow-lg shadow-green-600/30 animate-pulse flex items-center gap-1.5 border border-green-500/20"
+              title="Join Active Call"
+            >
+              <PhoneCall className="w-3.5 h-3.5 animate-bounce" />
+              <span>Join Call ({activeCallStatus.participants.length})</span>
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => startCall('audio')}
+                disabled={inCall}
+                className="p-2 rounded-xl text-slate-400 hover:text-green-400 hover:bg-green-950/20 border border-transparent hover:border-green-800/50 transition disabled:opacity-40"
+                title="Audio Call"
+              >
+                <Phone className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => startCall('video')}
+                disabled={inCall}
+                className="p-2 rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-indigo-950/20 border border-transparent hover:border-indigo-800/50 transition disabled:opacity-40"
+                title="Video Call"
+              >
+                <Video className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -506,6 +683,7 @@ export const Chat: React.FC = () => {
       <div className="flex flex-col h-full bg-[#070A0F]">
         <CallOverlay />
         <IncomingCallDialog />
+        <MinimizedCallWidget />
         <ChatInner />
       </div>
     </ChatProvider>

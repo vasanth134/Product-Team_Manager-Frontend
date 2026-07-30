@@ -120,7 +120,7 @@ export const ProfileView: React.FC = () => {
         
         {/* Profile Card & Avatar Selection */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="glass-card rounded-2xl overflow-hidden relative">
+          <div className="glass-card rounded-xl overflow-hidden relative">
             {/* Header Banner */}
             <div className="h-28 bg-gradient-indigo-purple relative">
               <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[10px] font-bold text-white bg-black/30 backdrop-blur-md border border-white/10 uppercase tracking-widest">
@@ -134,7 +134,7 @@ export const ProfileView: React.FC = () => {
                 <img 
                   src={avatarUrl || 'https://api.dicebear.com/7.x/bottts/svg?seed=Aether'} 
                   alt={name}
-                  className="w-24 h-24 rounded-2xl bg-slate-900 border-4 border-[#070A0F] shadow-xl object-cover transition duration-300 group-hover:scale-[1.02]"
+                  className="w-24 h-24 rounded-2xl bg-slate-900 border-4 border-app shadow-xl object-cover transition duration-300 group-hover:scale-[1.02]"
                 />
                 <button
                   type="button"
@@ -163,7 +163,7 @@ export const ProfileView: React.FC = () => {
           </div>
 
           {/* Teams list & user role on those teams */}
-          <div className="glass-card p-6 rounded-2xl space-y-4">
+          <div className="glass-card p-6 rounded-xl space-y-4">
             <h3 className="font-bold text-sm text-white font-display flex items-center gap-2">
               <Users className="w-4 h-4 text-indigo-400" />
               <span>Workspace Teams & Roles</span>
@@ -212,7 +212,7 @@ export const ProfileView: React.FC = () => {
 
         {/* Profile Edit Form */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="glass-card p-6 sm:p-8 rounded-2xl relative overflow-hidden">
+          <div className="glass-card p-6 sm:p-8 rounded-xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 bg-gradient-indigo-purple h-full"></div>
             
             <h3 className="font-bold text-base text-white font-display flex items-center gap-2 mb-6">

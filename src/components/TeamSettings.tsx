@@ -176,7 +176,7 @@ export const TeamSettings: React.FC = () => {
       )}
 
       {/* TEAM MEMBER MANAGEMENT SECTION */}
-      <section className="glass-card p-6 rounded-3xl border border-white/5 space-y-6">
+      <section className="glass-card p-6 rounded-xl space-y-6">
         <div className="flex justify-between items-center border-b border-slate-900/50 pb-4">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
@@ -216,7 +216,7 @@ export const TeamSettings: React.FC = () => {
                       <img 
                         src={targetUser.avatarUrl} 
                         alt={targetUser.name} 
-                        className="w-7 h-7 rounded-xl object-cover border border-white/5 bg-slate-900"
+                        className="w-7 h-7 rounded-xl object-cover border border-app bg-slate-900"
                       />
                       <div>
                         <span className="font-bold text-slate-200 block">{targetUser.name}</span>
@@ -282,7 +282,7 @@ export const TeamSettings: React.FC = () => {
 
       {/* PENDING INVITATIONS SECTION */}
       {isAdmin && (
-        <section className="glass-card p-6 rounded-3xl border border-white/5 space-y-6">
+        <section className="glass-card p-6 rounded-xl space-y-6">
           <div className="flex justify-between items-center border-b border-slate-900/50 pb-4">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
@@ -360,7 +360,7 @@ export const TeamSettings: React.FC = () => {
 
       {/* DANGER ZONE (DELETE TEAM) */}
       {isOwner && (
-        <section className="glass-card p-6 rounded-3xl border border-red-900/20 bg-red-950/5 space-y-6">
+        <section className="glass-card p-6 rounded-xl border border-red-900/20 bg-red-950/5 space-y-6">
           <div className="flex justify-between items-center border-b border-red-900/15 pb-4">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 animate-pulse">
