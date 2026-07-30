@@ -2,10 +2,10 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useTeam } from '../context/TeamContext';
 import { useAuth } from '../context/AuthContext';
 import { ChatProvider, useChat } from '../context/ChatContext';
-import type { Attachment } from '../context/ChatContext';
+import type { Attachment, Notification } from '../context/ChatContext';
 import {
   Send, Paperclip, Mic, MicOff, Video, VideoOff, Phone, PhoneOff,
-  PhoneCall, StopCircle, Image as ImageIcon, Volume2, Wifi, WifiOff, X,
+  PhoneCall, StopCircle, Image as ImageIcon, Volume2, WifiOff, X,
   Minimize2, Maximize2, MonitorUp, Bell, Plus, Hash, MessageSquare
 } from 'lucide-react';
 
