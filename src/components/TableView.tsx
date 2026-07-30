@@ -156,53 +156,47 @@ export const TableView: React.FC<TableViewProps> = ({ onEditTask }) => {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-[#070A0F] p-4 sm:p-8">
-      {/* Header Filter Controls Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h3 className="text-xl font-bold text-white tracking-tight font-display">Task Database View</h3>
-          <p className="text-xs text-slate-400 mt-1">
-            Spreadsheet table view with inline editing for <span className="text-indigo-400 font-semibold">{activeTeam?.name}</span>
-          </p>
-        </div>
-
-        {/* Filter Controls */}
-        <div className="flex items-center gap-3 flex-wrap">
+      {/* Filter Controls Bar */}
+      <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 w-full">
           {/* Search */}
-          <div className="relative">
+          <div className="relative flex-1 sm:max-w-xs">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
               placeholder="Search tasks..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="pl-8 pr-3 py-1.5 rounded-xl glass-input text-xs w-44"
+              className="pl-8 pr-3 py-2 rounded-xl glass-input text-xs w-full bg-slate-950/20"
             />
           </div>
 
-          {/* Filter Status */}
-          <select
-            value={filterStatus}
-            onChange={e => setFilterStatus(e.target.value)}
-            className="px-3 py-1.5 rounded-xl glass-input text-xs bg-slate-950 text-slate-200"
-          >
-            <option value="all">All Statuses</option>
-            {statusOptions.map(s => (
-              <option key={s.id} value={s.id}>{s.label}</option>
-            ))}
-          </select>
+          <div className="flex gap-2 w-full sm:w-auto">
+            {/* Filter Status */}
+            <select
+              value={filterStatus}
+              onChange={e => setFilterStatus(e.target.value)}
+              className="flex-1 sm:flex-none px-3 py-2 rounded-xl glass-input text-xs bg-[#0B0F19] text-slate-200 border border-slate-800"
+            >
+              <option value="all">All Statuses</option>
+              {statusOptions.map(s => (
+                <option key={s.id} value={s.id}>{s.label}</option>
+              ))}
+            </select>
 
-          {/* Filter Assignee */}
-          <select
-            value={filterAssignee}
-            onChange={e => setFilterAssignee(e.target.value)}
-            className="px-3 py-1.5 rounded-xl glass-input text-xs bg-slate-950 text-slate-200"
-          >
-            <option value="all">All Assignees</option>
-            <option value="unassigned">Unassigned</option>
-            {activeTeam?.members.map(m => (
-              <option key={m.user._id} value={m.user._id}>{m.user.name}</option>
-            ))}
-          </select>
+            {/* Filter Assignee */}
+            <select
+              value={filterAssignee}
+              onChange={e => setFilterAssignee(e.target.value)}
+              className="flex-1 sm:flex-none px-3 py-2 rounded-xl glass-input text-xs bg-[#0B0F19] text-slate-200 border border-slate-800"
+            >
+              <option value="all">All Assignees</option>
+              <option value="unassigned">Unassigned</option>
+              {activeTeam?.members.map(m => (
+                <option key={m.user._id} value={m.user._id}>{m.user.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
