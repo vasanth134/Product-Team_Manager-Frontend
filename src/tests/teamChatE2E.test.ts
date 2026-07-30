@@ -523,6 +523,82 @@ export async function runTeamChatE2ETests(): Promise<SummaryReport> {
     assert(data.isSharing === true, 'screen_share_status relays sharing status');
   });
 
+  // ===========================================================================
+  // TIER 6: Channels & Notifications Socket Isolation & Schema Validation
+  // ===========================================================================
+  console.log('\n--- [TIER 6] Channels & Notifications Socket Isolation ---');
+  
+  const { Channel } = await import('../../../server/src/models/Channel');
+  const { Notification } = await import('../../../server/src/models/Notification');
+
+  tierCounts['Tier 6'] = { total: 0, passed: 0, failed: 0 };
+
+  await runCase('Tier 6', 'Genuine Mongoose Channel schema model structure validation', () => {
+    const activeModel: any = Channel;
+    assert(activeModel !== undefined, 'Channel model registered');
+    assert(activeModel.modelName === 'Channel', 'Model name is Channel');
+    const paths = activeModel.schema.paths;
+    
+    assert(paths['name'] !== undefined, 'name path exists in schema');
+    assert((paths['name'] as any).options.required === true, 'name is required');
+    assert(paths['teamId'] !== undefined, 'teamId path exists in schema');
+    assert((paths['teamId'] as any).options.required === true, 'teamId is required');
+    assert(paths['createdBy'] !== undefined, 'createdBy path exists in schema');
+    assert((paths['createdBy'] as any).options.required === true, 'createdBy is required');
+  });
+
+  await runCase('Tier 6', 'Genuine Mongoose Notification schema model structure validation', () => {
+    const activeModel: any = Notification;
+    assert(activeModel !== undefined, 'Notification model registered');
+    assert(activeModel.modelName === 'Notification', 'Model name is Notification');
+    const paths = activeModel.schema.paths;
+    
+    assert(paths['recipient'] !== undefined, 'recipient path exists in schema');
+    assert((paths['recipient'] as any).options.required === true, 'recipient is required');
+    assert(paths['sender'] !== undefined, 'sender path exists in schema');
+    assert((paths['sender'] as any).options.required === true, 'sender is required');
+    assert(paths['teamId'] !== undefined, 'teamId path exists in schema');
+    assert((paths['teamId'] as any).options.required === true, 'teamId is required');
+    assert(paths['messageId'] !== undefined, 'messageId path exists in schema');
+    assert((paths['messageId'] as any).options.required === true, 'messageId is required');
+    assert(paths['text'] !== undefined, 'text path exists in schema');
+    assert((paths['text'] as any).options.required === true, 'text is required');
+    assert(paths['isRead'] !== undefined, 'isRead path exists in schema');
+    assert((paths['isRead'] as any).options.default === false, 'isRead defaults to false');
+  });
+
+  await runCase('Tier 6', 'Socket.io channel room joining and isolated message routing', async () => {
+    const mockTeamId = '64b5f9227181c00001bcde01';
+    const mockUserId = '64b5f9227181c00001bcde02';
+    const mockChanA = '64b5f9227181c00001bcde03';
+    const mockChanB = '64b5f9227181c00001bcde04';
+
+    // clientSocket1 joins channel_A
+    clientSocket1.emit('join_channel', { channelId: mockChanA });
+    // clientSocket2 joins channel_B
+    clientSocket2.emit('join_channel', { channelId: mockChanB });
+    await new Promise(r => setTimeout(r, 50));
+
+    let socket2ReceivedMsg = false;
+    clientSocket2.once('new_message', () => { socket2ReceivedMsg = true; });
+
+    const socket1ReceivedPromise = new Promise<any>((resolve) => {
+      clientSocket1.once('new_message', resolve);
+    });
+
+    // clientSocket1 sends message to channel_A
+    clientSocket1.emit('send_message', { 
+      teamId: mockTeamId, 
+      senderId: mockUserId, 
+      text: 'Hello Channel A', 
+      channelId: mockChanA 
+    });
+
+    await socket1ReceivedPromise;
+    await new Promise(r => setTimeout(r, 50));
+    assert(!socket2ReceivedMsg, 'Socket 2 on channel_B received NO message from channel_A');
+  });
+
   // Socket cleanup
   clientSocket1.disconnect();
   clientSocket2.disconnect();

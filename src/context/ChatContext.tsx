@@ -19,9 +19,31 @@ export interface CallHistory {
   endedAt: string;
 }
 
+export interface Channel {
+  _id: string;
+  name: string;
+  description?: string;
+  teamId: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface Notification {
+  _id: string;
+  recipient: string;
+  sender: { _id: string; name: string; avatarUrl: string };
+  teamId: { _id: string; name: string };
+  channelId?: { _id: string; name: string };
+  messageId: string;
+  text: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
 export interface ChatMessage {
   _id: string;
   teamId: string;
+  channelId?: string;
   sender: { _id: string; name: string; avatarUrl: string };
   text?: string;
   attachments: Attachment[];
@@ -68,6 +90,13 @@ interface ChatContextType {
   toggleMute: () => void;
   toggleCamera: () => void;
   toggleScreenShare: () => void;
+  channels: Channel[];
+  activeChannel: Channel | null;
+  notifications: Notification[];
+  selectChannel: (channelId: string) => void;
+  createChannel: (name: string, description?: string) => Promise<Channel | null>;
+  markNotificationRead: (notificationIds?: string[]) => Promise<void>;
+  fetchNotifications: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -92,7 +121,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   const [activeCallStatus, setActiveCallStatus] = useState<{ callType: 'audio' | 'video'; participants: string[] } | null>(null);
   const [isMinimized, setIsMinimized]           = useState(false);
 
+  const [channels, setChannels]                 = useState<Channel[]>([]);
+  const [activeChannel, setActiveChannel]       = useState<Channel | null>(null);
+  const [notifications, setNotifications]       = useState<Notification[]>([]);
+
   const socketRef  = useRef<Socket | null>(null);
+  const activeChannelRef = useRef<Channel | null>(null);
+  activeChannelRef.current = activeChannel;
   const pcsRef     = useRef<Map<string, RTCPeerConnection>>(new Map());
   const peerNamesRef = useRef<Record<string, string>>({});
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -215,6 +250,83 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     socketRef.current?.emit('webrtc_offer', { to: peerSocketId, sdp: offer });
   }, [setupPeerConnection]);
 
+  const fetchNotifications = useCallback(() => {
+    if (!token) return;
+    fetch(`${API_BASE_URL}/chat/notifications`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then((data: Notification[]) => {
+        if (Array.isArray(data)) {
+          setNotifications(data);
+        }
+      })
+      .catch(console.error);
+  }, [token]);
+
+  const markNotificationRead = useCallback(async (notificationIds?: string[]) => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/chat/notifications/mark-read`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ notificationIds })
+      });
+      if (res.ok) {
+        if (notificationIds && notificationIds.length > 0) {
+          setNotifications(prev => prev.filter(n => !notificationIds.includes(n._id)));
+        } else {
+          setNotifications([]);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to mark notifications read:', err);
+    }
+  }, [token]);
+
+  const createChannel = useCallback(async (name: string, description?: string): Promise<Channel | null> => {
+    if (!teamId || !token) return null;
+    try {
+      const res = await fetch(`${API_BASE_URL}/teams/${teamId}/channels`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, description })
+      });
+      if (!res.ok) throw new Error('Failed to create channel');
+      const data = await res.json();
+      setChannels(prev => [...prev, data]);
+      return data;
+    } catch (err) {
+      console.error('Failed to create channel:', err);
+      return null;
+    }
+  }, [teamId, token]);
+
+  const selectChannel = useCallback((channelId: string) => {
+    const channel = channels.find(c => c._id === channelId);
+    if (channel) {
+      setActiveChannel(channel);
+      socketRef.current?.emit('join_channel', { channelId });
+    }
+  }, [channels]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log('Browser online - syncing notifications...');
+      fetchNotifications();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [fetchNotifications]);
+
   // ── Socket connection ──────────────────────────────────────────────────────
   useEffect(() => {
     const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
@@ -223,12 +335,36 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     socket.on('connect', () => {
       setConnected(true);
       socket.emit('join_room', { teamId, userId: user?.id, userName: user?.name });
+      if (activeChannelRef.current) {
+        socket.emit('join_channel', { channelId: activeChannelRef.current._id });
+      }
+      fetchNotifications();
     });
 
     socket.on('disconnect', () => setConnected(false));
 
     socket.on('new_message', (msg: ChatMessage) => {
-      setMessages(prev => [...prev, msg]);
+      setMessages(prev => {
+        if (prev.some(m => m._id === msg._id)) return prev;
+        const currentActive = activeChannelRef.current;
+        if (msg.channelId) {
+          if (currentActive && currentActive._id === msg.channelId) {
+            return [...prev, msg];
+          }
+        } else {
+          if (!currentActive || currentActive.name === 'General') {
+            return [...prev, msg];
+          }
+        }
+        return prev;
+      });
+    });
+
+    socket.on('new_notification', (notif: Notification) => {
+      setNotifications(prev => {
+        if (prev.some(n => n._id === notif._id)) return prev;
+        return [notif, ...prev];
+      });
     });
 
     socket.on('user_typing', ({ userId, userName }: { userId: string; userName: string }) => {
@@ -372,18 +508,43 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId, user?.id]);
 
+  // ── Fetch channels when teamId changes ──────────────────────────────────────
+  useEffect(() => {
+    if (!teamId) {
+      setChannels([]);
+      setActiveChannel(null);
+      return;
+    }
+    fetch(`${API_BASE_URL}/teams/${teamId}/channels`, {
+      headers: { Authorization: `Bearer ${token || 'bypass_token'}` },
+    })
+      .then(r => r.json())
+      .then((data: Channel[]) => {
+        if (Array.isArray(data)) {
+          setChannels(data);
+          const general = data.find(c => c.name === 'General') || data[0] || null;
+          setActiveChannel(general);
+          if (general) {
+            socketRef.current?.emit('join_channel', { channelId: general._id });
+          }
+        }
+      })
+      .catch(console.error);
+  }, [teamId, token]);
+
   // ── Load message history ───────────────────────────────────────────────────
   useEffect(() => {
     if (!teamId) return;
     setMessages([]);
     setTypingMap({});
-    fetch(`${API_BASE_URL}/chat/messages?teamId=${teamId}`, {
+    const channelParam = activeChannel ? `&channelId=${activeChannel._id}` : '';
+    fetch(`${API_BASE_URL}/chat/messages?teamId=${teamId}${channelParam}`, {
       headers: { Authorization: `Bearer ${token || 'bypass_token'}` },
     })
       .then(r => r.json())
       .then((data: ChatMessage[]) => Array.isArray(data) && setMessages(data))
       .catch(console.error);
-  }, [teamId, token]);
+  }, [teamId, activeChannel, token]);
 
   // ── Typing ──────────────────────────────────────────────────────────────────
   const emitTypingStart = useCallback(() => {
@@ -402,6 +563,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
       senderId: user?.id,
       text,
       attachments,
+      channelId: activeChannelRef.current?._id || undefined,
     });
   }, [teamId, user?.id]);
 
@@ -618,7 +780,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
       callError, activeCallStatus, isMinimized, setIsMinimized,
       sendMessage, uploadFile, emitTypingStart, emitTypingStop, joinRoom,
       startCall, acceptCall, rejectCall, joinActiveCall, endCall, toggleMute, toggleCamera, toggleScreenShare,
-      screenShareSocketId
+      screenShareSocketId,
+      channels, activeChannel, notifications, selectChannel, createChannel, markNotificationRead, fetchNotifications
     }}>
       {children}
     </ChatContext.Provider>
