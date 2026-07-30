@@ -50,6 +50,7 @@ interface ChatContextType {
   isMuted: boolean;
   isCameraOff: boolean;
   isScreenSharing: boolean;
+  screenShareSocketId: string | null;
   callError: string | null;
   activeCallStatus: { callType: 'audio' | 'video'; participants: string[] } | null;
   isMinimized: boolean;
@@ -86,12 +87,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   const [isMuted, setIsMuted]                   = useState(false);
   const [isCameraOff, setIsCameraOff]           = useState(false);
   const [isScreenSharing, setIsScreenSharing]   = useState(false);
+  const [screenShareSocketId, setScreenShareSocketId] = useState<string | null>(null);
   const [callError, setCallError]               = useState<string | null>(null);
   const [activeCallStatus, setActiveCallStatus] = useState<{ callType: 'audio' | 'video'; participants: string[] } | null>(null);
   const [isMinimized, setIsMinimized]           = useState(false);
 
   const socketRef  = useRef<Socket | null>(null);
   const pcsRef     = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const peerNamesRef = useRef<Record<string, string>>({});
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
 
@@ -107,6 +110,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
       pc.close();
     }
     pcsRef.current.clear();
+    peerNamesRef.current = {};
 
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(t => t.stop());
@@ -126,6 +130,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     setIsMuted(false);
     setIsCameraOff(false);
     setIsScreenSharing(false);
+    setScreenShareSocketId(null);
     setCallError(null);
     setIsMinimized(false);
   }, []);
@@ -191,7 +196,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
         ...prev,
         [peerSocketId]: {
           stream: newRemote,
-          userName: prev[peerSocketId]?.userName || 'Participant'
+          userName: peerNamesRef.current[peerSocketId] || prev[peerSocketId]?.userName || 'Participant'
         }
       }));
 
@@ -256,12 +261,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
 
     // ── WebRTC Signaling events ──────────────────────────────────────────────
     socket.on('incoming_call', (data: IncomingCall) => {
+      peerNamesRef.current[data.from] = data.callerName;
       setIncomingCall(data);
       soundManager.startRingtone();
     });
 
     socket.on('call_accepted', async ({ from, callerName }: { from: string; callerName: string }) => {
       soundManager.stopAll();
+      peerNamesRef.current[from] = callerName;
       setRemoteStreams(prev => ({
         ...prev,
         [from]: { stream: new MediaStream(), userName: callerName }
@@ -271,12 +278,16 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     });
 
     socket.on('peer_joined_call', async ({ socketId, userName }: { socketId: string; userName: string }) => {
+      peerNamesRef.current[socketId] = userName;
       setRemoteStreams(prev => ({
         ...prev,
         [socketId]: { stream: new MediaStream(), userName }
       }));
       await setupPeerConnection(socketId);
       await createOffer(socketId);
+      if (screenStreamRef.current) {
+        socket.emit('screen_share_status', { teamId, isSharing: true });
+      }
     });
 
     socket.on('call_joined_success', async ({ peers, callType: incomingType }: { peers: Array<{ socketId: string; userName: string }>; callType: 'audio' | 'video' }) => {
@@ -288,6 +299,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
         setIncomingCall(null);
 
         for (const peer of peers) {
+          peerNamesRef.current[peer.socketId] = peer.userName;
           setRemoteStreams(prev => ({
             ...prev,
             [peer.socketId]: { stream: new MediaStream(), userName: peer.userName }
@@ -332,6 +344,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
       } catch { /* ignore */ }
     });
 
+    socket.on('screen_share_status', ({ socketId, isSharing }: { socketId: string; isSharing: boolean }) => {
+      setScreenShareSocketId(isSharing ? socketId : null);
+    });
+
     socket.on('call_ended', ({ from }: { from: string }) => {
       const pc = pcsRef.current.get(from);
       if (pc) {
@@ -343,6 +359,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
         delete next[from];
         return next;
       });
+      setScreenShareSocketId(prev => prev === from ? null : prev);
     });
 
     return () => {
@@ -530,6 +547,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
         screenStreamRef.current = null;
       }
       setIsScreenSharing(false);
+      socketRef.current?.emit('screen_share_status', { teamId, isSharing: false });
 
       // Restore camera track
       const originalTrack = localStreamRef.current?.getVideoTracks()[0];
@@ -545,6 +563,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
         const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         screenStreamRef.current = stream;
         setIsScreenSharing(true);
+        socketRef.current?.emit('screen_share_status', { teamId, isSharing: true });
 
         const screenTrack = stream.getVideoTracks()[0];
 
@@ -569,6 +588,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
             screenStreamRef.current = null;
           }
           setIsScreenSharing(false);
+          socketRef.current?.emit('screen_share_status', { teamId, isSharing: false });
 
           const originalTrack = localStreamRef.current?.getVideoTracks()[0];
           for (const [_, pc] of pcsRef.current) {
@@ -582,7 +602,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
         console.error("Screen sharing cancelled or failed:", err);
       }
     }
-  }, [isScreenSharing]);
+  }, [isScreenSharing, teamId]);
 
   return (
     <ChatContext.Provider value={{
@@ -591,6 +611,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
       callError, activeCallStatus, isMinimized, setIsMinimized,
       sendMessage, uploadFile, emitTypingStart, emitTypingStop, joinRoom,
       startCall, acceptCall, rejectCall, joinActiveCall, endCall, toggleMute, toggleCamera, toggleScreenShare,
+      screenShareSocketId
     }}>
       {children}
     </ChatContext.Provider>

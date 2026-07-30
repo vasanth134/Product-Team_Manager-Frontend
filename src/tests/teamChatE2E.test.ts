@@ -512,6 +512,17 @@ export async function runTeamChatE2ETests(): Promise<SummaryReport> {
     assert(tracksStopped === 2, 'All MediaStream tracks stopped on call termination');
   });
 
+  await runCase('Tier 5', 'WebRTC screen_share_status relay over real socket server', async () => {
+    const screenSharePromise = new Promise<any>((resolve) => {
+      clientSocket3.once('screen_share_status', resolve);
+    });
+
+    clientSocket1.emit('screen_share_status', { teamId: 'team_beta', isSharing: true });
+    const data = await screenSharePromise;
+    assert(data.socketId === clientSocket1.id, 'screen_share_status relays socket ID of sharing user');
+    assert(data.isSharing === true, 'screen_share_status relays sharing status');
+  });
+
   // Socket cleanup
   clientSocket1.disconnect();
   clientSocket2.disconnect();

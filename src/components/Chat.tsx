@@ -9,7 +9,7 @@ import {
   Minimize2, Maximize2, MonitorUp
 } from 'lucide-react';
 
-const RemoteVideoPlayer: React.FC<{ stream: MediaStream }> = ({ stream }) => {
+const RemoteVideoPlayer: React.FC<{ stream: MediaStream; className?: string }> = ({ stream, className = "w-full h-full object-cover" }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
     if (videoRef.current && stream) {
@@ -23,7 +23,7 @@ const RemoteVideoPlayer: React.FC<{ stream: MediaStream }> = ({ stream }) => {
       ref={videoRef}
       autoPlay
       playsInline
-      className="w-full h-full object-cover"
+      className={className}
     />
   );
 };
@@ -32,10 +32,19 @@ const RemoteVideoPlayer: React.FC<{ stream: MediaStream }> = ({ stream }) => {
 const CallOverlay: React.FC = () => {
   const {
     inCall, callType, localStream, remoteStreams, isMuted, isCameraOff, isScreenSharing,
-    endCall, toggleMute, toggleCamera, toggleScreenShare, callError, isMinimized, setIsMinimized, activeCallStatus
+    endCall, toggleMute, toggleCamera, toggleScreenShare, callError, isMinimized, setIsMinimized, activeCallStatus,
+    screenShareSocketId
   } = useChat();
 
   const localVideoRef  = useRef<HTMLVideoElement>(null);
+  const pipRef         = useRef<HTMLDivElement>(null);
+
+  const [pipPosition, setPipPosition] = useState({ x: 100, y: 100 });
+  const [hasInitializedPosition, setHasInitializedPosition] = useState(false);
+  const [isDraggingState, setIsDraggingState] = useState(false);
+
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     if (localVideoRef.current && localStream) {
@@ -44,16 +53,127 @@ const CallOverlay: React.FC = () => {
     }
   }, [localStream]);
 
+  // Initialize position to bottom right once screen size is known
+  useEffect(() => {
+    if (inCall && !hasInitializedPosition) {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      setPipPosition({
+        x: width - 192 - 24,
+        y: height - 128 - 120
+      });
+      setHasInitializedPosition(true);
+    }
+  }, [inCall, hasInitializedPosition]);
+
+  // Keep PIP within viewport bounds when window resizes
+  useEffect(() => {
+    const handleResize = () => {
+      setPipPosition(prev => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const maxX = Math.max(0, width - 192 - 16);
+        const maxY = Math.max(0, height - 128 - 16);
+        return {
+          x: Math.max(16, Math.min(prev.x, maxX)),
+          y: Math.max(16, Math.min(prev.y, maxY))
+        };
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Only left click
+    isDragging.current = true;
+    setIsDraggingState(true);
+    dragStart.current = { x: e.clientX - pipPosition.x, y: e.clientY - pipPosition.y };
+  };
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDragging.current) return;
+    const newX = e.clientX - dragStart.current.x;
+    const newY = e.clientY - dragStart.current.y;
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const maxX = Math.max(0, width - 192 - 16);
+    const maxY = Math.max(0, height - 128 - 16);
+
+    setPipPosition({
+      x: Math.max(16, Math.min(newX, maxX)),
+      y: Math.max(16, Math.min(newY, maxY))
+    });
+  }, [pipPosition]);
+
+  const handleMouseUp = useCallback(() => {
+    isDragging.current = false;
+    setIsDraggingState(false);
+  }, []);
+
+  // Touch event handlers for mobile dragging
+  const handleTouchStart = (e: React.TouchEvent) => {
+    isDragging.current = true;
+    setIsDraggingState(true);
+    const touch = e.touches[0];
+    dragStart.current = { x: touch.clientX - pipPosition.x, y: touch.clientY - pipPosition.y };
+  };
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!isDragging.current) return;
+    const touch = e.touches[0];
+    const newX = touch.clientX - dragStart.current.x;
+    const newY = touch.clientY - dragStart.current.y;
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const maxX = Math.max(0, width - 192 - 16);
+    const maxY = Math.max(0, height - 128 - 16);
+
+    setPipPosition({
+      x: Math.max(16, Math.min(newX, maxX)),
+      y: Math.max(16, Math.min(newY, maxY))
+    });
+  }, [pipPosition]);
+
+  const handleTouchEnd = useCallback(() => {
+    isDragging.current = false;
+    setIsDraggingState(false);
+  }, []);
+
+  useEffect(() => {
+    if (inCall) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      window.addEventListener('touchend', handleTouchEnd);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [inCall, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
+
+  useEffect(() => {
+    if (!inCall) {
+      setHasInitializedPosition(false);
+    }
+  }, [inCall]);
+
   if (!inCall || isMinimized) return null;
 
   const remotePeers = Object.entries(remoteStreams);
+  const isRemoteScreenSharing = screenShareSocketId !== null && !!remoteStreams[screenShareSocketId];
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center gap-6">
+    <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col justify-between overflow-hidden">
       {/* Minimize Button */}
       <button
         onClick={() => setIsMinimized(true)}
-        className="absolute top-6 right-6 p-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition border border-slate-700/50 shadow-lg backdrop-blur"
+        className="absolute top-6 right-6 p-3 rounded-xl bg-slate-900/60 hover:bg-slate-800 text-slate-300 hover:text-white transition border border-slate-800/80 shadow-lg backdrop-blur-xl z-30"
         title="Minimize Call"
       >
         <Minimize2 className="w-5 h-5" />
@@ -61,17 +181,17 @@ const CallOverlay: React.FC = () => {
 
       {/* Network connection error indication */}
       {callError && (
-        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-50 bg-red-900/90 border border-red-500/50 text-red-100 px-4 py-2.5 rounded-xl flex items-center gap-2 text-xs font-semibold shadow-2xl backdrop-blur-sm animate-pulse">
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 z-45 bg-red-900/90 border border-red-500/50 text-red-100 px-4 py-2.5 rounded-xl flex items-center gap-2 text-xs font-semibold shadow-2xl backdrop-blur-sm animate-pulse">
           <WifiOff className="w-4 h-4 text-red-400" />
           <span>{callError}</span>
         </div>
       )}
 
-      {/* Video & Audio displays */}
-      <div className="relative w-full max-w-4xl aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 flex items-center justify-center p-4">
+      {/* Audio / Video display viewport */}
+      <div className="relative w-full h-full bg-slate-950 flex items-center justify-center">
         {callType === 'audio' ? (
           // Audio Call UI
-          <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex flex-col items-center gap-4 text-center z-10">
             <div className="relative">
               <div className="absolute inset-0 bg-indigo-500/10 rounded-full animate-ping scale-150" />
               <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white text-3xl font-extrabold shadow-lg border border-indigo-400/30">
@@ -86,56 +206,154 @@ const CallOverlay: React.FC = () => {
             </div>
           </div>
         ) : (
-          // Video call mesh grid
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full h-full p-2">
-            {remotePeers.length === 0 ? (
-              <div className="relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800 flex flex-col items-center justify-center text-slate-500 gap-3 w-full h-full col-span-2">
-                <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-                <span className="text-xs">Waiting for participants to connect…</span>
-              </div>
-            ) : (
-              remotePeers.map(([sid, info]) => {
-                const hasVideo = info.stream.getVideoTracks().length > 0;
+          // Video call layout
+          <>
+            {isRemoteScreenSharing ? (
+              // Remote Screen Share Mode
+              (() => {
+                const sharingPeer = remoteStreams[screenShareSocketId!];
                 return (
-                  <div key={sid} className="relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800 flex items-center justify-center w-full h-full aspect-video">
-                    {hasVideo ? (
-                      <RemoteVideoPlayer stream={info.stream} />
-                    ) : (
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-white text-xl font-bold border border-slate-700">
-                          {info.userName.slice(0, 2).toUpperCase()}
-                        </div>
-                        <span className="text-xs text-slate-400">{info.userName}</span>
-                      </div>
-                    )}
-                    <div className="absolute bottom-3 left-3 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] text-slate-300 font-semibold border border-slate-800">
-                      {info.userName}
+                  <div className="absolute inset-0 z-0 bg-slate-950 flex items-center justify-center">
+                    <RemoteVideoPlayer stream={sharingPeer.stream} className="w-full h-full object-contain bg-slate-950" />
+                    
+                    {/* Screen Sharing Indicator */}
+                    <div className="absolute top-6 left-6 bg-slate-900/80 backdrop-blur-xl px-3 py-1.5 rounded-xl text-xs text-slate-300 font-semibold border border-slate-800/80 shadow-lg z-20 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      <span>Viewing {sharingPeer.userName}'s Screen</span>
                     </div>
+
+                    {/* Other participants floating cards */}
+                    {(() => {
+                      const otherPeers = remotePeers.filter(([sid]) => sid !== screenShareSocketId);
+                      if (otherPeers.length === 0) return null;
+                      return (
+                        <div className="absolute top-24 right-6 flex flex-col gap-4 z-20">
+                          {otherPeers.map(([sid, info]) => {
+                            const hasVideo = info.stream.getVideoTracks().length > 0;
+                            return (
+                              <div key={sid} className="w-48 h-32 rounded-xl overflow-hidden border border-slate-800/80 shadow-2xl bg-slate-950 flex items-center justify-center relative">
+                                {hasVideo ? (
+                                  <RemoteVideoPlayer stream={info.stream} className="w-full h-full object-cover" />
+                                ) : (
+                                  <div className="flex flex-col items-center gap-2">
+                                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-white text-xs font-bold border border-slate-700">
+                                      {info.userName.slice(0, 2).toUpperCase()}
+                                    </div>
+                                  </div>
+                                )}
+                                <div className="absolute bottom-2 left-2 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] text-slate-300 font-semibold border border-slate-800">
+                                  {info.userName}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
-              })
-            )}
-          </div>
-        )}
-
-        {/* Local Video PiP overlay (only for Video Calls) */}
-        {callType === 'video' && (
-          <div className="absolute bottom-6 right-6 w-40 h-28 rounded-xl overflow-hidden border-2 border-indigo-500/40 shadow-2xl bg-slate-950 z-10 flex items-center justify-center">
-            {!isCameraOff ? (
-              <video ref={localVideoRef} autoPlay playsInline muted
-                className="w-full h-full object-cover"
-              />
+              })()
             ) : (
-              <div className="flex flex-col items-center justify-center h-full w-full bg-slate-900 text-slate-500 text-[10px]">
-                <span>Camera Off</span>
+              // Normal Camera View Mode
+              <>
+                {remotePeers.length === 0 ? (
+                  // Waiting screen
+                  <div className="absolute inset-0 bg-slate-950 flex flex-col items-center justify-center text-slate-500 gap-3 z-0">
+                    <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+                    <span className="text-xs">Waiting for participants to connect…</span>
+                  </div>
+                ) : remotePeers.length === 1 ? (
+                  // Single remote participant - fullscreen cover
+                  (() => {
+                    const [, info] = remotePeers[0];
+                    const hasVideo = info.stream.getVideoTracks().length > 0;
+                    return (
+                      <div className="absolute inset-0 z-0 bg-slate-950">
+                        {hasVideo ? (
+                          <RemoteVideoPlayer stream={info.stream} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950">
+                            <div className="relative">
+                              <div className="absolute inset-0 bg-indigo-500/10 rounded-full animate-pulse scale-110" />
+                              <div className="w-28 h-28 rounded-full bg-slate-800 flex items-center justify-center text-white text-3xl font-bold border border-slate-700 shadow-2xl">
+                                {info.userName.slice(0, 2).toUpperCase()}
+                              </div>
+                            </div>
+                            <span className="text-base font-semibold text-slate-300">{info.userName}</span>
+                          </div>
+                        )}
+                        <div className="absolute bottom-28 left-6 bg-slate-900/80 backdrop-blur-xl px-3 py-1.5 rounded-xl text-xs text-slate-200 font-semibold border border-slate-800/80 shadow-lg z-20">
+                          {info.userName}
+                        </div>
+                      </div>
+                    );
+                  })()
+                ) : (
+                  // Multiple remote participants - Grid layout filling screen
+                  <div className={`absolute inset-0 z-10 grid gap-4 p-6 pb-28 pt-20 ${
+                    remotePeers.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
+                    remotePeers.length <= 4 ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-3'
+                  }`}>
+                    {remotePeers.map(([sid, info]) => {
+                      const hasVideo = info.stream.getVideoTracks().length > 0;
+                      return (
+                        <div key={sid} className="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 flex items-center justify-center w-full h-full shadow-lg">
+                          {hasVideo ? (
+                            <RemoteVideoPlayer stream={info.stream} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="flex flex-col items-center gap-3">
+                              <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center text-white text-2xl font-bold border border-slate-700 shadow-inner">
+                                {info.userName.slice(0, 2).toUpperCase()}
+                              </div>
+                              <span className="text-sm font-medium text-slate-300">{info.userName}</span>
+                            </div>
+                          )}
+                          <div className="absolute bottom-4 left-4 bg-slate-950/70 backdrop-blur-md px-3 py-1 rounded-xl text-xs text-slate-200 font-semibold border border-slate-800">
+                            {info.userName}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Local Video PiP overlay (draggable & touch-draggable) */}
+            {callType === 'video' && (
+              <div
+                ref={pipRef}
+                onMouseDown={handleMouseDown}
+                onTouchStart={handleTouchStart}
+                style={{
+                  position: 'absolute',
+                  top: `${pipPosition.y}px`,
+                  left: `${pipPosition.x}px`,
+                  cursor: isDraggingState ? 'grabbing' : 'grab',
+                }}
+                className="w-48 h-32 rounded-2xl overflow-hidden border border-indigo-500/40 shadow-2xl bg-slate-950 z-20 flex items-center justify-center group select-none transition-[border-color] duration-300 hover:border-indigo-500/60"
+              >
+                {!isCameraOff ? (
+                  <video ref={localVideoRef} autoPlay playsInline muted
+                    className="w-full h-full object-cover pointer-events-none select-none"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full w-full bg-slate-900 text-slate-500 text-xs pointer-events-none select-none">
+                    <VideoOff className="w-5 h-5 mb-1" />
+                    <span>Camera Off</span>
+                  </div>
+                )}
+                <div className="absolute bottom-2 left-2 bg-slate-950/80 px-2 py-0.5 rounded text-[10px] text-slate-300 font-semibold border border-slate-800">
+                  You {isScreenSharing && ' (Sharing)'}
+                </div>
               </div>
             )}
-          </div>
+          </>
         )}
       </div>
 
-      {/* Controls */}
-      <div className="flex items-center gap-4">
+      {/* Controls Overlay Floating at bottom */}
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-30 bg-slate-900/70 backdrop-blur-xl px-6 py-3.5 rounded-3xl border border-slate-800/80 shadow-2xl flex items-center gap-4">
         <button
           onClick={toggleMute}
           className={`w-14 h-14 rounded-full flex items-center justify-center transition text-white shadow-lg ${isMuted ? 'bg-red-600 hover:bg-red-500' : 'bg-slate-700 hover:bg-slate-600'}`}
@@ -172,8 +390,6 @@ const CallOverlay: React.FC = () => {
           <PhoneOff className="w-6 h-6 text-white" />
         </button>
       </div>
-
-      <p className="text-xs text-slate-500">Peer-to-peer encrypted call</p>
     </div>
   );
 };
