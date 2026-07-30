@@ -51,7 +51,7 @@ const CallOverlay: React.FC = () => {
       localVideoRef.current.srcObject = localStream;
       localVideoRef.current.play().catch(() => {});
     }
-  }, [localStream]);
+  }, [localStream, isCameraOff, isScreenSharing]);
 
   // Initialize position to bottom right once screen size is known
   useEffect(() => {

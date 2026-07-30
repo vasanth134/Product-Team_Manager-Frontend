@@ -278,6 +278,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     });
 
     socket.on('peer_joined_call', async ({ socketId, userName }: { socketId: string; userName: string }) => {
+      soundManager.stopAll();
       peerNamesRef.current[socketId] = userName;
       setRemoteStreams(prev => ({
         ...prev,
@@ -292,6 +293,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
 
     socket.on('call_joined_success', async ({ peers, callType: incomingType }: { peers: Array<{ socketId: string; userName: string }>; callType: 'audio' | 'video' }) => {
       try {
+        soundManager.stopAll();
         setCallError(null);
         const stream = await getMedia(incomingType);
         setInCall(true);
