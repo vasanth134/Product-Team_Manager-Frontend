@@ -599,6 +599,112 @@ export async function runTeamChatE2ETests(): Promise<SummaryReport> {
     assert(!socket2ReceivedMsg, 'Socket 2 on channel_B received NO message from channel_A');
   });
 
+  await runCase('Tier 6', 'Socket.io notification dispatch and boundary-aware mention parsing', async () => {
+    const mongooseModule = await import('mongoose');
+    const mongoose = (mongooseModule as any).default || mongooseModule;
+    // Save original state
+    const originalReadyState = mongoose.connection.readyState;
+
+    // We mock connection state to be 1 so that the mentions parsing block runs
+    Object.defineProperty(mongoose.connection, 'readyState', {
+      value: 1,
+      writable: true,
+      configurable: true
+    });
+
+    const { Team } = await import('../../../server/src/models/Team');
+    const { Notification } = await import('../../../server/src/models/Notification');
+    const { Message } = await import('../../../server/src/models/Message');
+
+    // Mock Team.findOne to bypass join authorization check
+    const originalTeamFindOne = Team.findOne;
+    Team.findOne = (() => Promise.resolve({})) as any;
+
+    // Mock Team.findById to return a member "Sarah Chen" to be mentioned
+    const originalTeamFindById = Team.findById;
+    Team.findById = (() => ({
+      populate: () => Promise.resolve({
+        _id: '64b5f9227181c00001bcde01',
+        name: 'Aether Core SaaS Product',
+        members: [
+          {
+            user: {
+              _id: '64b5f9227181c00001bcde02',
+              name: 'Sarah Chen',
+              email: 'sarah.chen@aether.io'
+            },
+            role: 'admin'
+          }
+        ]
+      })
+    })) as any;
+
+    // Mock Message.create & Message.findById
+    const originalMessageCreate = Message.create;
+    Message.create = (() => Promise.resolve({})) as any;
+    const originalMessageFindById = Message.findById;
+    Message.findById = (() => ({
+      populate: () => Promise.resolve({
+        _id: '64b5f9227181c00001bcde06',
+        text: '@Sarah Chen hello'
+      })
+    })) as any;
+
+    // Mock Notification.create & Notification.findById
+    const originalNotificationCreate = Notification.create;
+    Notification.create = (() => Promise.resolve({ _id: '64b5f9227181c00001bcde07' })) as any;
+    const originalNotificationFindById = Notification.findById;
+    Notification.findById = (() => ({
+      populate: () => ({
+        populate: () => ({
+          populate: () => Promise.resolve({
+            _id: '64b5f9227181c00001bcde07',
+            recipient: '64b5f9227181c00001bcde02',
+            sender: { name: 'Alex Rivera' },
+            teamId: { name: 'Aether Core SaaS Product' },
+            channelId: { name: 'General' },
+            text: '@Sarah Chen hello'
+          })
+        })
+      })
+    })) as any;
+
+    // Connect clientSocket3 as "Sarah Chen" and join user room
+    clientSocket3.emit('join_room', { teamId: '64b5f9227181c00001bcde01', userId: '64b5f9227181c00001bcde02', userName: 'Sarah' });
+    await new Promise(r => setTimeout(r, 50));
+
+    // Listen for notification on clientSocket3
+    const notificationPromise = new Promise<any>((resolve) => {
+      clientSocket3.once('new_notification', resolve);
+    });
+
+    // clientSocket1 sends message mentioning @Sarah Chen
+    clientSocket1.emit('send_message', {
+      teamId: '64b5f9227181c00001bcde01',
+      senderId: '64b5f9227181c00001bcde05',
+      text: 'Hey @Sarah Chen can you look at this?',
+      channelId: '64b5f9227181c00001bcde03'
+    });
+
+    const notif = await notificationPromise;
+    assert(notif !== null, 'Notification received by mentioned user');
+    assert(notif.text.includes('@Sarah Chen'), 'Notification text matches');
+    assert(notif.recipient === '64b5f9227181c00001bcde02', 'Notification routed to correct recipient');
+
+    // Restore mocked methods and readyState
+    Team.findOne = originalTeamFindOne;
+    Team.findById = originalTeamFindById;
+    Message.create = originalMessageCreate;
+    Message.findById = originalMessageFindById;
+    Notification.create = originalNotificationCreate;
+    Notification.findById = originalNotificationFindById;
+    Object.defineProperty(mongoose.connection, 'readyState', {
+      value: originalReadyState,
+      writable: true,
+      configurable: true
+    });
+  });
+
   // Socket cleanup
   clientSocket1.disconnect();
   clientSocket2.disconnect();
