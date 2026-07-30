@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTeam } from '../context/TeamContext';
 import { useAuth } from '../context/AuthContext';
 import { ChatProvider, useChat } from '../context/ChatContext';
@@ -28,8 +28,45 @@ const RemoteVideoPlayer: React.FC<{ stream: MediaStream; className?: string }> =
   );
 };
 
+const RemoteAudioPlayer: React.FC<{ stream: MediaStream }> = ({ stream }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  useEffect(() => {
+    if (audioRef.current && stream) {
+      audioRef.current.srcObject = stream;
+      audioRef.current.play().catch(err => console.warn("Remote audio play error:", err));
+    }
+  }, [stream]);
+
+  return (
+    <audio
+      ref={audioRef}
+      autoPlay
+      playsInline
+      className="hidden"
+    />
+  );
+};
+
+const CallAudioController: React.FC = () => {
+  const { inCall, callType, remoteStreams, isMinimized } = useChat();
+  if (!inCall) return null;
+
+  return (
+    <>
+      {Object.entries(remoteStreams).map(([sid, info]) => {
+        const hasVideo = info.stream.getVideoTracks().length > 0;
+        // Audio is needed only if: call is minimized, it is audio-only, or the remote participant has no video stream
+        const needsAudioOnly = isMinimized || callType === 'audio' || !hasVideo;
+        if (!needsAudioOnly) return null;
+        return <RemoteAudioPlayer key={sid} stream={info.stream} />;
+      })}
+    </>
+  );
+};
+
 // ─── Call Overlay ─────────────────────────────────────────────────────────────
 const CallOverlay: React.FC = () => {
+  const { user } = useAuth();
   const {
     inCall, callType, localStream, remoteStreams, isMuted, isCameraOff, isScreenSharing,
     endCall, toggleMute, toggleCamera, toggleScreenShare, callError, isMinimized, setIsMinimized, activeCallStatus,
@@ -38,6 +75,24 @@ const CallOverlay: React.FC = () => {
 
   const localVideoRef  = useRef<HTMLVideoElement>(null);
   const pipRef         = useRef<HTMLDivElement>(null);
+
+  const participantNames = useMemo(() => {
+    const names = new Set<string>();
+    if (user?.name) {
+      names.add(user.name);
+    }
+    Object.values(remoteStreams).forEach(info => {
+      if (info.userName) {
+        names.add(info.userName);
+      }
+    });
+    if (activeCallStatus?.participants) {
+      activeCallStatus.participants.forEach(name => {
+        if (name) names.add(name);
+      });
+    }
+    return Array.from(names);
+  }, [user?.name, remoteStreams, activeCallStatus?.participants]);
 
   const [pipPosition, setPipPosition] = useState({ x: 100, y: 100 });
   const [hasInitializedPosition, setHasInitializedPosition] = useState(false);
@@ -201,7 +256,7 @@ const CallOverlay: React.FC = () => {
             <div>
               <p className="text-lg font-bold text-white">Active Room Audio Call</p>
               <p className="text-xs text-indigo-400 mt-1">
-                In Call: {activeCallStatus?.participants.join(', ') || 'Connecting…'}
+                In Call: {participantNames.join(', ') || 'Connecting…'}
               </p>
             </div>
           </div>
@@ -396,10 +451,29 @@ const CallOverlay: React.FC = () => {
 
 // ─── Minimized Call Widget ──────────────────────────────────────────────────
 const MinimizedCallWidget: React.FC = () => {
+  const { user } = useAuth();
   const {
-    inCall, callType, isMuted, isCameraOff, isScreenSharing, endCall,
+    inCall, callType, remoteStreams, isMuted, isCameraOff, isScreenSharing, endCall,
     toggleMute, toggleCamera, toggleScreenShare, isMinimized, setIsMinimized, activeCallStatus
   } = useChat();
+
+  const participantNames = useMemo(() => {
+    const names = new Set<string>();
+    if (user?.name) {
+      names.add(user.name);
+    }
+    Object.values(remoteStreams).forEach(info => {
+      if (info.userName) {
+        names.add(info.userName);
+      }
+    });
+    if (activeCallStatus?.participants) {
+      activeCallStatus.participants.forEach(name => {
+        if (name) names.add(name);
+      });
+    }
+    return Array.from(names);
+  }, [user?.name, remoteStreams, activeCallStatus?.participants]);
 
   if (!inCall || !isMinimized) return null;
 
@@ -422,7 +496,7 @@ const MinimizedCallWidget: React.FC = () => {
       </div>
       
       <p className="text-[10px] text-slate-400 truncate">
-        Participants: {activeCallStatus?.participants.join(', ') || 'Connecting…'}
+        Participants: {participantNames.join(', ') || 'Connecting…'}
       </p>
 
       <div className="flex items-center justify-between gap-2 mt-1">
@@ -900,6 +974,7 @@ export const Chat: React.FC = () => {
     <ChatProvider teamId={activeTeam._id}>
       <div className="flex flex-col h-full bg-[#070A0F]">
         <CallOverlay />
+        <CallAudioController />
         <IncomingCallDialog />
         <MinimizedCallWidget />
         <ChatInner />

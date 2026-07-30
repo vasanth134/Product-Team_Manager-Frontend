@@ -562,6 +562,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     } else {
       // Start Screen Sharing
       try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+          throw new Error("getDisplayMedia is not supported on this browser or mobile device");
+        }
         const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         screenStreamRef.current = stream;
         setIsScreenSharing(true);
@@ -602,6 +605,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
         };
       } catch (err) {
         console.error("Screen sharing cancelled or failed:", err);
+        alert("Screen sharing is not supported or was denied on this device/browser.");
+        setIsScreenSharing(false);
       }
     }
   }, [isScreenSharing, teamId]);
