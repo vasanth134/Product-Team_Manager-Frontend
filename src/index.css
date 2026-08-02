@@ -84,10 +84,10 @@
   --bg-hover:       rgba(174, 236, 213, 0.08);
   --bg-subtle:      #070A0E;
 
-  --text-primary:   #E5EBF1;
-  --text-secondary: #909EA8;
-  --text-muted:     #606E78;
-  --text-faint:     #38444E;
+  --text-primary:   #F1F5F9;
+  --text-secondary: #CBD5E1;
+  --text-muted:     #94A3B8;
+  --text-faint:     #64748B;
 
   --border:         rgba(255, 255, 255, 0.05);
   --border-subtle:  rgba(255, 255, 255, 0.03);
@@ -382,7 +382,7 @@ input.text-white {
 .text-indigo-450,
 .text-indigo-500,
 .text-indigo-600 {
-  color: #1F523B !important; /* Premium high-contrast dark green for text contrast */
+  color: #1F523B !important; /* Premium high-contrast dark green for text contrast in light mode */
 }
 .bg-indigo-500,
 .bg-indigo-650,
@@ -400,6 +400,29 @@ input.text-white {
   background-color: rgba(174, 236, 213, 0.22) !important;
   color: #1F523B !important;
   border-color: rgba(174, 236, 213, 0.40) !important;
+}
+
+/* Dark mode specific accent mappings to preserve contrast */
+[data-theme="dark"] .text-indigo-400,
+[data-theme="dark"] .text-indigo-450,
+[data-theme="dark"] .text-indigo-500,
+[data-theme="dark"] .text-indigo-600 {
+  color: #aeecd5 !important; /* High contrast bright mint green for dark theme text */
+}
+[data-theme="dark"] .bg-indigo-500,
+[data-theme="dark"] .bg-indigo-650,
+[data-theme="dark"] .bg-indigo-650\/15,
+[data-theme="dark"] .bg-indigo-500\/10 {
+  background-color: rgba(174, 236, 213, 0.10) !important;
+}
+[data-theme="dark"] .border-indigo-500\/20 {
+  border-color: rgba(174, 236, 213, 0.20) !important;
+}
+[data-theme="dark"] .bg-indigo-650\/15,
+[data-theme="dark"] .bg-indigo-500\/10.text-indigo-400 {
+  background-color: rgba(174, 236, 213, 0.12) !important;
+  color: #aeecd5 !important;
+  border-color: rgba(174, 236, 213, 0.25) !important;
 }
 
 /* ─── Premium Utilitarian Minimalist Buttons ───────────────── */
