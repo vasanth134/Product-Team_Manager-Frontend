@@ -114,7 +114,7 @@ interface ChatContextType {
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
-export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string }> = ({ children, teamId }) => {
+export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string; isChatTabActive?: boolean }> = ({ children, teamId, isChatTabActive = false }) => {
   const { user, token } = useAuth();
   const [messages, setMessages]                 = useState<ChatMessage[]>([]);
   const [typingMap, setTypingMap]               = useState<Record<string, string>>({});
@@ -148,6 +148,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   const peerNamesRef = useRef<Record<string, string>>({});
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
+
+  const isChatTabActiveRef = useRef(isChatTabActive);
+  useEffect(() => {
+    isChatTabActiveRef.current = isChatTabActive;
+  }, [isChatTabActive]);
 
   // Derived array of usernames currently typing
   const typingUsers = Object.values(typingMap);
@@ -290,7 +295,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
       .then(r => r.json())
       .then((data: Notification[]) => {
         if (Array.isArray(data)) {
-          setNotifications(data);
+          setNotifications(prev => JSON.stringify(prev) !== JSON.stringify(data) ? data : prev);
         }
       })
       .catch(console.error);
@@ -359,6 +364,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     };
   }, [fetchNotifications]);
 
+  // Periodic background polling for notifications
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [token, fetchNotifications]);
+
   // Synchronize Web Push Notification subscription when user is authenticated
   useEffect(() => {
     if (!user) return;
@@ -421,7 +435,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     socket.on('disconnect', () => setConnected(false));
 
     socket.on('new_message', (msg: ChatMessage) => {
-      const isActiveChannel = activeChannelRef.current && activeChannelRef.current._id === msg.channelId;
+      const isActiveChannel = isChatTabActiveRef.current && activeChannelRef.current && activeChannelRef.current._id === msg.channelId;
       const isWindowVisible = document.visibilityState === 'visible';
 
       // Trigger HTML5 system notification if sender is not the current user,

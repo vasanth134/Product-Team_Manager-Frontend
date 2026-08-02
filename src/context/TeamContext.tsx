@@ -537,6 +537,44 @@ export const TeamProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTeamId, selectedDate]); // ONLY primitive deps — no callbacks, no objects
 
+  // Periodic background polling for real-time updates without page refresh
+  useEffect(() => {
+    if (!activeTeamId || !tokenRef.current) return;
+
+    const interval = setInterval(() => {
+      const hdrs = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokenRef.current}`,
+      };
+
+      Promise.all([
+        fetch(`${API_BASE_URL}/tasks?teamId=${activeTeamId}`, { headers: hdrs }).then(r => r.ok ? r.json() : []),
+        fetch(`${API_BASE_URL}/milestones?teamId=${activeTeamId}`, { headers: hdrs }).then(r => r.ok ? r.json() : []),
+        fetch(`${API_BASE_URL}/standups?teamId=${activeTeamId}&date=${selectedDate}`, { headers: hdrs }).then(r => r.ok ? r.json() : []),
+        fetch(`${API_BASE_URL}/analytics?teamId=${activeTeamId}`, { headers: hdrs }).then(r => r.ok ? r.json() : null),
+        fetch(`${API_BASE_URL}/teams`, { headers: hdrs }).then(r => r.ok ? r.json() : []),
+      ])
+        .then(([tasksData, milestonesData, standupsData, analyticsData, teamsData]) => {
+          setTasks(prev => JSON.stringify(prev) !== JSON.stringify(tasksData) ? tasksData : prev);
+          setMilestones(prev => JSON.stringify(prev) !== JSON.stringify(milestonesData) ? milestonesData : prev);
+          setStandups(prev => JSON.stringify(prev) !== JSON.stringify(standupsData) ? standupsData : prev);
+          if (analyticsData) {
+            setAnalytics(prev => JSON.stringify(prev) !== JSON.stringify(analyticsData) ? analyticsData : prev);
+          }
+          if (Array.isArray(teamsData) && teamsData.length > 0) {
+            setTeams(prev => JSON.stringify(prev) !== JSON.stringify(teamsData) ? teamsData : prev);
+            const updatedActive = teamsData.find((t: TeamType) => t._id === activeTeamId);
+            if (updatedActive) {
+              setActiveTeamState(prev => JSON.stringify(prev) !== JSON.stringify(updatedActive) ? updatedActive : prev);
+            }
+          }
+        })
+        .catch(err => console.error('Background refresh error:', err));
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [activeTeamId, selectedDate]);
+
   return (
     <TeamContext.Provider
       value={{

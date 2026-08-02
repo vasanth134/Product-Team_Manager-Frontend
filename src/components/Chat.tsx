@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useTeam } from '../context/TeamContext';
 import { useAuth } from '../context/AuthContext';
-import { ChatProvider, useChat } from '../context/ChatContext';
+import { useChat } from '../context/ChatContext';
 import type { Attachment } from '../context/ChatContext';
 import {
   Send, Paperclip, Mic, MicOff, Video, VideoOff, Phone, PhoneOff,
@@ -1191,27 +1191,23 @@ const ChatInner: React.FC = () => {
   );
 };
 
-// ─── Chat (exported — wraps provider) ────────────────────────────────────────
-export const Chat: React.FC = () => {
-  const { activeTeam } = useTeam();
-
-  if (!activeTeam) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-slate-600 text-sm">
-        Select a team to start chatting
-      </div>
-    );
-  }
-
+// ─── ChatCallManager (exported) ─────────────────────────────────────────────
+export const ChatCallManager: React.FC = () => {
   return (
-    <ChatProvider teamId={activeTeam._id}>
-      <div className="flex flex-col h-full bg-app">
-        <CallOverlay />
-        <CallAudioController />
-        <IncomingCallDialog />
-        <MinimizedCallWidget />
-        <ChatInner />
-      </div>
-    </ChatProvider>
+    <>
+      <CallOverlay />
+      <CallAudioController />
+      <IncomingCallDialog />
+      <MinimizedCallWidget />
+    </>
+  );
+};
+
+// ─── Chat (exported) ────────────────────────────────────────
+export const Chat: React.FC = () => {
+  return (
+    <div className="flex flex-col h-full bg-app">
+      <ChatInner />
+    </div>
   );
 };

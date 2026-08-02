@@ -8,7 +8,8 @@ import { Dashboard } from './components/Dashboard';
 import { Kanban } from './components/Kanban';
 import { Roadmap } from './components/Roadmap';
 import { Standups } from './components/Standups';
-import { Chat } from './components/Chat';
+import { Chat, ChatCallManager } from './components/Chat';
+import { ChatProvider } from './context/ChatContext';
 import { ProfileView } from './components/ProfileView';
 import { TeamSettings } from './components/TeamSettings';
 import { Sparkles, FolderKanban, Menu } from 'lucide-react';
@@ -126,47 +127,61 @@ const WorkspaceContainer: React.FC = () => {
     }
   };
 
-  return (
-    <div className="flex h-screen w-screen overflow-hidden bg-app relative">
-      {/* Mobile Top Header */}
-      <header className="md:hidden h-14 w-full flex items-center justify-between px-4 border-b border-app bg-[var(--bg-base)]/80 backdrop-blur-md z-30 absolute top-0 left-0">
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setShowMobileSidebar(true)}
-            className="p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white cursor-pointer"
-          >
-            <Menu className="w-4.5 h-4.5" />
-          </button>
-          <span className="font-bold text-sm tracking-tight text-white font-display">Aether Workspace</span>
+  if (!activeTeam) {
+    return (
+      <div className="min-h-screen w-screen bg-app flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs text-slate-400 font-medium font-display">Loading Workspace...</p>
         </div>
-        {activeTeam && (
-          <div className="text-[10px] text-indigo-400 font-bold bg-indigo-950/45 px-2.5 py-1 rounded-lg border border-indigo-900/30">
-            {activeTeam.name}
+      </div>
+    );
+  }
+
+  return (
+    <ChatProvider teamId={activeTeam._id} isChatTabActive={currentTab === 'chat'}>
+      <div className="flex h-screen w-screen overflow-hidden bg-app relative">
+        {/* Mobile Top Header */}
+        <header className="md:hidden h-14 w-full flex items-center justify-between px-4 border-b border-app bg-[var(--bg-base)]/80 backdrop-blur-md z-30 absolute top-0 left-0">
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowMobileSidebar(true)}
+              className="p-1.5 rounded-lg bg-slate-950 border border-slate-900 text-slate-400 hover:text-white cursor-pointer"
+            >
+              <Menu className="w-4.5 h-4.5" />
+            </button>
+            <span className="font-bold text-sm tracking-tight text-white font-display">Aether Workspace</span>
           </div>
+          {activeTeam && (
+            <div className="text-[10px] text-indigo-400 font-bold bg-indigo-950/45 px-2.5 py-1 rounded-lg border border-indigo-900/30">
+              {activeTeam.name}
+            </div>
+          )}
+        </header>
+
+        {/* Sidebar Drawer Backdrop */}
+        {showMobileSidebar && (
+          <div 
+            onClick={() => setShowMobileSidebar(false)}
+            className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
+          ></div>
         )}
-      </header>
 
-      {/* Sidebar Drawer Backdrop */}
-      {showMobileSidebar && (
-        <div 
-          onClick={() => setShowMobileSidebar(false)}
-          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm md:hidden animate-in fade-in duration-200"
-        ></div>
-      )}
-
-      <Sidebar 
-        currentTab={currentTab} 
-        setCurrentTab={(tab) => {
-          setCurrentTab(tab);
-          setShowMobileSidebar(false);
-        }} 
-        isOpenOnMobile={showMobileSidebar}
-        onCloseMobile={() => setShowMobileSidebar(false)}
-      />
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden pt-14 md:pt-0">
-        {renderActiveView()}
-      </main>
-    </div>
+        <Sidebar 
+          currentTab={currentTab} 
+          setCurrentTab={(tab) => {
+            setCurrentTab(tab);
+            setShowMobileSidebar(false);
+          }} 
+          isOpenOnMobile={showMobileSidebar}
+          onCloseMobile={() => setShowMobileSidebar(false)}
+        />
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden pt-14 md:pt-0">
+          {renderActiveView()}
+        </main>
+        <ChatCallManager />
+      </div>
+    </ChatProvider>
   );
 };
 

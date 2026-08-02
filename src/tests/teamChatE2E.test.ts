@@ -615,10 +615,31 @@ export async function runTeamChatE2ETests(): Promise<SummaryReport> {
     const { Team } = await import('../../../server/src/models/Team');
     const { Notification } = await import('../../../server/src/models/Notification');
     const { Message } = await import('../../../server/src/models/Message');
+    const { Channel } = await import('../../../server/src/models/Channel');
 
     // Mock Team.findOne to bypass join authorization check
     const originalTeamFindOne = Team.findOne;
     Team.findOne = (() => Promise.resolve({})) as any;
+
+    // Mock Channel find & create queries to bypass database buffering timeouts
+    const originalChannelFindOne = Channel.findOne;
+    Channel.findOne = (() => Promise.resolve({
+      _id: '64b5f9227181c00001bcde03',
+      name: 'General',
+      teamId: '64b5f9227181c00001bcde01'
+    })) as any;
+    const originalChannelCreate = Channel.create;
+    Channel.create = (() => Promise.resolve({
+      _id: '64b5f9227181c00001bcde03',
+      name: 'General',
+      teamId: '64b5f9227181c00001bcde01'
+    })) as any;
+    const originalChannelFindById = Channel.findById;
+    Channel.findById = (() => Promise.resolve({
+      _id: '64b5f9227181c00001bcde03',
+      name: 'General',
+      teamId: '64b5f9227181c00001bcde01'
+    })) as any;
 
     // Mock Team.findById to return a member "Sarah Chen" to be mentioned
     const originalTeamFindById = Team.findById;
@@ -698,6 +719,9 @@ export async function runTeamChatE2ETests(): Promise<SummaryReport> {
     Message.findById = originalMessageFindById;
     Notification.create = originalNotificationCreate;
     Notification.findById = originalNotificationFindById;
+    Channel.findOne = originalChannelFindOne;
+    Channel.create = originalChannelCreate;
+    Channel.findById = originalChannelFindById;
     Object.defineProperty(mongoose.connection, 'readyState', {
       value: originalReadyState,
       writable: true,
