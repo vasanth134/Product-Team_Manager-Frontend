@@ -128,6 +128,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   const socketRef  = useRef<Socket | null>(null);
   const activeChannelRef = useRef<Channel | null>(null);
   activeChannelRef.current = activeChannel;
+  const channelsRef = useRef<Channel[]>([]);
+  channelsRef.current = channels;
   const pcsRef     = useRef<Map<string, RTCPeerConnection>>(new Map());
   const peerNamesRef = useRef<Record<string, string>>({});
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -343,6 +345,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     };
   }, [fetchNotifications]);
 
+  // Request browser Notification permission on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().catch(console.error);
+      }
+    }
+  }, []);
+
   // ── Socket connection ──────────────────────────────────────────────────────
   useEffect(() => {
     const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] });
@@ -360,6 +371,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     socket.on('disconnect', () => setConnected(false));
 
     socket.on('new_message', (msg: ChatMessage) => {
+      // Trigger HTML5 system notification if sender is not the current user
+      if (
+        typeof window !== 'undefined' &&
+        'Notification' in window &&
+        Notification.permission === 'granted' &&
+        msg.sender?._id !== user?.id
+      ) {
+        const channelName = channelsRef.current.find(c => c._id === msg.channelId)?.name || 'General';
+        new Notification(`New message in #${channelName}`, {
+          body: `${msg.sender?.name || 'Someone'}: ${msg.text || 'Sent an attachment'}`,
+          icon: msg.sender?.avatarUrl || '/favicon.svg'
+        });
+      }
+
       setMessages(prev => {
         if (prev.some(m => m._id === msg._id)) return prev;
         const currentActive = activeChannelRef.current;

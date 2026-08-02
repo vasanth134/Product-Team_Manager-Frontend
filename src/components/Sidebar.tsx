@@ -145,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, setCurrentTab, isO
           </button>
 
           {showTeamDropdown && (
-            <div className="absolute left-4 right-4 mt-2 py-1.5 rounded-xl bg-[#070A0F] border border-slate-900 shadow-2xl z-30 backdrop-blur-xl">
+            <div className="absolute left-4 right-4 mt-2 py-1.5 rounded-xl bg-app-card border border-slate-900 shadow-2xl z-30 backdrop-blur-xl">
               <div className="max-h-40 overflow-y-auto">
                 {teams.map(t => (
                   <button

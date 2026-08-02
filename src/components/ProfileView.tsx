@@ -93,7 +93,7 @@ export const ProfileView: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 bg-[#070A0F] transition-colors duration-250">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 bg-app transition-colors duration-250">
       
       {/* Header section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

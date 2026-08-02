@@ -64,10 +64,10 @@ export const Standups: React.FC = () => {
   const isTodaySelected = selectedDate === new Date().toISOString().split('T')[0];
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-[#070A0F]">
+    <div className="flex-1 flex flex-col overflow-hidden bg-app">
       
       {/* Page Header */}
-      <div className="p-4 sm:p-8 border-b border-slate-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
+      <div className="p-4 sm:p-8 border-b border-app flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight font-display">Daily Standups</h2>
         </div>
@@ -117,7 +117,7 @@ export const Standups: React.FC = () => {
               return (
                 <div 
                   key={standup._id} 
-                  className={`glass-card p-5.5 rounded-2xl border-l-3 transition duration-150 ${hasBlockers ? 'border-l-red-500/80 bg-red-950/2' : isMe ? 'border-l-indigo-500/80' : 'border-l-slate-800'}`}
+                  className={`glass-card p-5.5 rounded-2xl border-l-3 transition duration-150 ${hasBlockers ? 'border-l-red-500 bg-[#FDEBEC]/10' : isMe ? 'border-l-[#aeecd5]' : 'border-l-[var(--border)]'}`}
                 >
                   <div className="flex justify-between items-start gap-4 mb-4">
                     <div className="flex items-center gap-3">

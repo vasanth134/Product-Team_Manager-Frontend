@@ -638,32 +638,36 @@ const CallHistoryBubble: React.FC<{ msg: any }> = ({ msg }) => {
 
   return (
     <div className="flex justify-center my-4 w-full">
-      <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 max-w-sm w-full flex items-start gap-3 shadow-lg backdrop-blur-sm">
-        <div className={`p-2.5 rounded-xl flex-shrink-0 flex items-center justify-center ${
+      <div className="glass-card p-4 rounded-xl max-w-sm w-full flex items-start gap-3.5 border border-app">
+        <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center border ${
           isMissed
-            ? 'bg-red-500/10 border border-red-500/20 text-red-400'
-            : 'bg-green-500/10 border border-green-500/20 text-green-400'
+            ? 'bg-[#FDEBEC] border-red-200/50 text-[#9F2F2D]'
+            : 'bg-[#EDF3EC] border-[#aeecd5]/30 text-[#1F523B]'
         }`}>
-          {isVideo ? <Video className="w-5 h-5" /> : <Phone className="w-5 h-5" />}
+          {isVideo ? <Video className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold text-white">
-              {isVideo ? 'Video Call' : 'Voice Call'}
-            </p>
-            <span className="text-[10px] text-slate-500 flex-shrink-0">
+            <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-widest block">
+              {isVideo ? 'Video Conference' : 'Audio Briefing'}
+            </span>
+            <span className="text-[10px] text-[var(--text-muted)] font-medium tabular-nums flex-shrink-0">
               {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
-          <p className="text-sm font-bold text-slate-200 mt-0.5">
+          <p className="text-xs font-bold text-[var(--text-primary)] mt-0.5">
             {isMissed ? 'Missed Call' : `Call Ended · ${callHistory.duration}s`}
           </p>
           {joinedCount > 0 && (
-            <div className="mt-2 flex flex-col gap-0.5 border-t border-slate-800/60 pt-1.5">
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Participants ({joinedCount})</span>
-              <span className="text-xs text-slate-300 truncate">
-                {callHistory.joinedParticipants.join(', ')}
-              </span>
+            <div className="mt-2.5 flex flex-col gap-1 border-t border-[var(--border)] pt-2">
+              <span className="text-[8px] text-[var(--text-muted)] uppercase tracking-widest font-black">Participants ({joinedCount})</span>
+              <div className="flex flex-wrap gap-1 mt-0.5">
+                {callHistory.joinedParticipants.map((pName: string, idx: number) => (
+                  <span key={idx} className="px-1.5 py-0.5 rounded bg-app text-[9px] text-[var(--text-secondary)] font-semibold border border-[var(--border)]">
+                    {pName}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -925,11 +929,11 @@ const ChatInner: React.FC = () => {
   const removePending = (idx: number) => setPendingAtt(prev => prev.filter((_, i) => i !== idx));
 
   return (
-    <div className="flex h-full w-full overflow-hidden bg-[#070A0F]">
+    <div className="flex h-full w-full overflow-hidden bg-app">
       
       {/* ── Channels Sidebar ── */}
-      <div className="w-56 flex-shrink-0 border-r border-slate-900 bg-[#080B10]/40 flex flex-col h-full backdrop-blur-md">
-        <div className="px-5 py-4 border-b border-slate-900/60 flex items-center justify-between flex-shrink-0">
+      <div className="w-56 flex-shrink-0 border-r border-app bg-app-2 flex flex-col h-full backdrop-blur-md">
+        <div className="px-5 py-4 border-b border-app flex items-center justify-between flex-shrink-0">
           <span className="text-[10px] font-black text-slate-500 tracking-wider uppercase">Channels</span>
           <button
             onClick={() => setShowCreateChannelModal(true)}
@@ -958,10 +962,10 @@ const ChatInner: React.FC = () => {
       </div>
 
       {/* ── Main Chat Area ── */}
-      <div className="flex-1 flex flex-col h-full bg-[#070A0F] overflow-hidden relative">
+      <div className="flex-1 flex flex-col h-full bg-app overflow-hidden relative">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800/70 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-app flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" style={{ display: connected ? 'block' : 'none' }} />
             {!connected && <WifiOff className="w-3.5 h-3.5 text-slate-500" />}
@@ -1285,7 +1289,7 @@ export const Chat: React.FC = () => {
 
   return (
     <ChatProvider teamId={activeTeam._id}>
-      <div className="flex flex-col h-full bg-[#070A0F]">
+      <div className="flex flex-col h-full bg-app">
         <CallOverlay />
         <CallAudioController />
         <IncomingCallDialog />

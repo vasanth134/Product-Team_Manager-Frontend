@@ -32,12 +32,12 @@ export const Dashboard: React.FC = () => {
   // Custom status color helper
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'backlog': return '#64748B'; // slate
-      case 'todo': return '#3B82F6'; // blue
-      case 'in_progress': return '#8B5CF6'; // purple
-      case 'review': return '#F59E0B'; // amber
-      case 'done': return '#10B981'; // emerald
-      default: return '#6366F1';
+      case 'backlog': return '#9B9A97'; // muted neutral gray
+      case 'todo': return '#787774'; // charcoal gray
+      case 'in_progress': return '#aeecd5'; // light mint green accent
+      case 'review': return '#E1F3FE'; // pale blue
+      case 'done': return '#EDF3EC'; // pale green
+      default: return '#aeecd5';
     }
   };
 
@@ -296,10 +296,10 @@ export const Dashboard: React.FC = () => {
                         backgroundSize: '12px 100%'
                       }}></div>
 
-                      {/* Completed Tasks (Emerald gradient) */}
+                      {/* Completed Tasks */}
                       {member.completedTasks > 0 && (
                         <div 
-                          className="bg-gradient-to-r from-emerald-600/70 to-teal-500/70 border-r border-slate-950 flex items-center justify-center text-[9px] font-black text-emerald-50 transition-all duration-700 relative group-hover:brightness-110"
+                          className="bg-[#EDF3EC] border-r border-slate-950 flex items-center justify-center text-[9px] font-bold text-[#346538] transition-all duration-700 relative group-hover:brightness-[0.98]"
                           style={{ width: `${closedWidth}%` }}
                           title={`${member.completedTasks} completed`}
                         >
@@ -307,10 +307,10 @@ export const Dashboard: React.FC = () => {
                         </div>
                       )}
                       
-                      {/* Open Tasks (Indigo gradient) */}
+                      {/* Open Tasks */}
                       {member.openTasks > 0 && (
                         <div 
-                          className="bg-gradient-to-r from-indigo-600/70 to-violet-500/70 flex items-center justify-center text-[9px] font-black text-indigo-50 transition-all duration-700 relative group-hover:brightness-110"
+                          className="bg-[#aeecd5] flex items-center justify-center text-[9px] font-bold text-[#1F523B] transition-all duration-700 relative group-hover:brightness-[0.98]"
                           style={{ width: `${openWidth}%` }}
                           title={`${member.openTasks} active`}
                         >
@@ -378,9 +378,9 @@ export const Dashboard: React.FC = () => {
                 
                 {/* Milestone Progress Bar */}
                 <div className="space-y-1.5 pt-2">
-                  <div className="h-2 rounded-full bg-slate-950 overflow-hidden relative shadow-inner">
+                  <div className="h-1.5 rounded-full bg-slate-900 overflow-hidden relative">
                     <div 
-                      className={`h-full rounded-full transition-all duration-700 bg-gradient-to-r ${m.status === 'completed' ? 'from-emerald-500 to-teal-500' : 'from-indigo-500 to-violet-500'}`}
+                      className={`h-full rounded-full transition-all duration-700 ${m.status === 'completed' ? 'bg-[#aeecd5]' : 'bg-[#aeecd5]/60'}`}
                       style={{ width: `${m.completionPercentage}%` }}
                     ></div>
                   </div>

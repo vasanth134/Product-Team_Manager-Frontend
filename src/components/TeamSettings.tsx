@@ -147,12 +147,12 @@ export const TeamSettings: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 bg-[#070A0F] relative">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-8 bg-app relative">
       {/* Background glow overlay */}
       <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 rounded-full blur-[140px] pointer-events-none"></div>
 
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-900 pb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-app pb-6">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight font-display">Workspace Settings</h2>
         </div>

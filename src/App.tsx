@@ -39,8 +39,8 @@ const WorkspaceContainer: React.FC = () => {
   // 1. Teamless Onboarding Setup Screen
   if (teams.length === 0) {
     return (
-      <div className="relative min-h-screen flex items-center justify-center p-4 bg-[#05080E] overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+      <div className="relative min-h-screen flex items-center justify-center p-4 bg-app overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-indigo-500/5 rounded-full blur-[100px] pointer-events-none"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
         <div className="w-full max-w-md z-10 text-center space-y-6">
@@ -236,7 +236,7 @@ const InviteAcceptor: React.FC<{
 
   if (error) {
     return (
-      <div className="relative min-h-screen flex items-center justify-center p-4 bg-[#05080E]">
+      <div className="relative min-h-screen flex items-center justify-center p-4 bg-app">
         <div className="w-full max-w-md glass-card p-8 rounded-2xl text-center space-y-6">
           <div className="text-red-400 font-bold text-lg font-display">Invitation Error</div>
           <p className="text-xs text-slate-300 leading-relaxed">{error}</p>
@@ -266,7 +266,7 @@ const InviteAcceptor: React.FC<{
 
   if (loading) {
     return (
-      <div className="min-h-screen w-screen bg-[#05080E] flex items-center justify-center">
+      <div className="min-h-screen w-screen bg-app flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto"></div>
           <p className="text-xs text-slate-400 font-medium">Joining team {inviteDetails.teamName}...</p>
@@ -277,7 +277,7 @@ const InviteAcceptor: React.FC<{
 
   if (success) {
     return (
-      <div className="min-h-screen w-screen bg-[#05080E] flex items-center justify-center">
+      <div className="min-h-screen w-screen bg-app flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-12 h-12 bg-green-500/10 border border-green-500/30 rounded-full flex items-center justify-center mx-auto text-green-400 text-xl font-bold">✓</div>
           <p className="text-xs text-slate-300 font-medium font-display">Successfully joined {inviteDetails.teamName}!</p>
@@ -330,7 +330,7 @@ const MainApp: React.FC = () => {
 
   if (loading || inviteLoading) {
     return (
-      <div className="min-h-screen w-screen bg-[#05080E] flex items-center justify-center">
+      <div className="min-h-screen w-screen bg-app flex items-center justify-center">
         <div className="text-center space-y-4">
           <div className="w-10 h-10 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto"></div>
           <p className="text-xs text-slate-400 font-medium">

@@ -182,10 +182,10 @@ export const Kanban: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-[#070A0F]">
+    <div className="flex-1 flex flex-col overflow-hidden bg-app">
       
       {/* Upper header */}
-      <div className="p-4 sm:p-8 border-b border-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0">
+      <div className="p-4 sm:p-8 border-b border-app flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0">
         <div className="flex justify-between items-center w-full sm:w-auto gap-4">
           <h2 className="text-xl font-bold text-white tracking-tight font-display">Product Task Board</h2>
           <div className="sm:hidden">

@@ -109,10 +109,10 @@ export const Roadmap: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden bg-[#070A0F]">
+    <div className="flex-1 flex flex-col overflow-hidden bg-app">
       
       {/* Page Header */}
-      <div className="p-4 sm:p-8 border-b border-slate-900 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
+      <div className="p-4 sm:p-8 border-b border-app flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight font-display">Product Roadmap</h2>
         </div>
@@ -145,7 +145,7 @@ export const Roadmap: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="max-w-4xl mx-auto space-y-8 relative before:absolute before:inset-y-0 before:left-4.5 before:w-0.5 before:bg-slate-900">
+          <div className="max-w-4xl mx-auto space-y-8 relative before:absolute before:inset-y-0 before:left-4.5 before:w-0.5 before:bg-[var(--border)]">
             {milestones.map((milestone) => {
               const isActive = milestone.status === 'active';
               const isCompleted = milestone.status === 'completed';
@@ -153,8 +153,8 @@ export const Roadmap: React.FC = () => {
               return (
                 <div key={milestone._id} className="relative pl-12 group">
                   {/* Timeline bullet indicator */}
-                  <div className={`absolute left-2.5 top-1.5 w-4.5 h-4.5 rounded-full border-2 transform -translate-x-1/2 flex items-center justify-center transition-colors duration-300 ${isCompleted ? 'bg-emerald-950 border-emerald-500' : isActive ? 'bg-indigo-950 border-indigo-500 animate-pulse' : 'bg-slate-950 border-slate-800'}`}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${isCompleted ? 'bg-emerald-500' : isActive ? 'bg-indigo-500' : 'bg-slate-700'}`}></div>
+                  <div className={`absolute left-2.5 top-1.5 w-4.5 h-4.5 rounded-full border-2 transform -translate-x-1/2 flex items-center justify-center transition-colors duration-300 ${isCompleted ? 'bg-[#EDF3EC] border-[#346538]/30' : isActive ? 'bg-[#aeecd5] border-[#1F523B]/30 animate-pulse' : 'bg-[var(--bg-base-2)] border-[var(--border)]'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${isCompleted ? 'bg-[#346538]' : isActive ? 'bg-[#1F523B]' : 'bg-[var(--text-muted)]'}`}></div>
                   </div>
 
                   {/* Card Container */}
@@ -162,7 +162,7 @@ export const Roadmap: React.FC = () => {
                     <div className="space-y-2 flex-1">
                       <div className="flex flex-wrap items-center gap-2.5">
                         <h4 className="font-bold text-sm text-slate-200 font-display">{milestone.title}</h4>
-                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase ${isCompleted ? 'bg-emerald-950/40 text-emerald-450 border border-emerald-900/50' : isActive ? 'bg-indigo-950/40 text-indigo-450 border border-indigo-900/50' : 'bg-slate-900/50 text-slate-400 border border-slate-800'}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase border ${isCompleted ? 'bg-emerald-950/30 text-emerald-400 border-emerald-900/30' : isActive ? 'bg-indigo-950/40 text-indigo-400 border-indigo-900/30' : 'bg-slate-900/30 text-slate-400 border-slate-900/50'}`}>
                           {milestone.status}
                         </span>
                       </div>

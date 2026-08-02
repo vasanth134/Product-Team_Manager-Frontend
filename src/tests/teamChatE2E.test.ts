@@ -705,6 +705,12 @@ export async function runTeamChatE2ETests(): Promise<SummaryReport> {
     });
   });
 
+  await runCase('Tier 6', 'Browser Notification permission request and message event trigger contract', () => {
+    const contextContent = fs.readFileSync(path.join(projectRoot, 'client', 'src', 'context', 'ChatContext.tsx'), 'utf8');
+    assert(contextContent.includes('Notification.requestPermission'), 'ChatContext requests browser Notification permission on mount');
+    assert(contextContent.includes('new Notification'), 'ChatContext triggers a browser Notification upon receiving a new message');
+  });
+
   // Socket cleanup
   clientSocket1.disconnect();
   clientSocket2.disconnect();
