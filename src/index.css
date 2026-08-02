@@ -1,40 +1,39 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,450&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,450&display=swap');
 
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Geist Sans', 'Helvetica Neue', sans-serif;
-  --font-display: 'Newsreader', serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Geist Sans', 'Helvetica Neue', sans-serif;
+  --font-display: 'Outfit', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
 /* ─── CSS Custom Properties (theme tokens) ─────────────────────────────────── */
-:root,
-[data-theme="dark"] {
-  --bg-base:        #FFFFFF;
-  --bg-base-2:      #F7F6F3;
-  --bg-panel:       rgba(255, 255, 255, 0.95);
-  --bg-card:        rgba(255, 255, 255, 0.85);
+:root {
+  --bg-base:        #F4FAF7; /* Teal White Canvas */
+  --bg-base-2:      #FFFFFF;
+  --bg-panel:       rgba(255, 255, 255, 0.98);
+  --bg-card:        rgba(255, 255, 255, 0.90);
   --bg-card-solid:  #FFFFFF;
-  --bg-input:       #F7F6F3;
+  --bg-input:       #EDF4F1;
   --bg-input-focus: #FFFFFF;
   --bg-hover:       rgba(174, 236, 213, 0.15);
-  --bg-subtle:      #F7F6F3;
+  --bg-subtle:      #FFFFFF;
 
-  --text-primary:   #111111;
-  --text-secondary: #787774;
-  --text-muted:     #9B9A97;
-  --text-faint:     #D4D4D4;
+  --text-primary:   #1A201E;
+  --text-secondary: #5A6561;
+  --text-muted:     #808D89;
+  --text-faint:     #B5C4C0;
 
-  --border:         #EAEAEA;
-  --border-subtle:  #F1F1EF;
-  --border-mid:     #EAEAEA;
+  --border:         #DCE6E2;
+  --border-subtle:  #E9F2EE;
+  --border-mid:     #DCE6E2;
 
-  --shadow-card:    0 2px 12px rgba(0, 0, 0, 0.03);
-  --shadow-sm:      0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-card:    0 2px 10px rgba(26, 32, 30, 0.03);
+  --shadow-sm:      0 1px 3px rgba(26, 32, 30, 0.02);
 
   --glass-bg:       #FFFFFF;
-  --glass-panel:    #F7F6F3;
+  --glass-panel:    #FFFFFF;
   --input-ring:     rgba(174, 236, 213, 0.25);
   --input-border-focus: #aeecd5;
 
@@ -43,35 +42,67 @@
 }
 
 [data-theme="light"] {
-  --bg-base:        #F7F6F3;
+  --bg-base:        #F4FAF7; /* Teal White Canvas */
   --bg-base-2:      #FFFFFF;
   --bg-panel:       rgba(255, 255, 255, 0.98);
   --bg-card:        rgba(255, 255, 255, 0.90);
   --bg-card-solid:  #FFFFFF;
-  --bg-input:       #F0EFEA;
+  --bg-input:       #EDF4F1;
   --bg-input-focus: #FFFFFF;
-  --bg-hover:       rgba(174, 236, 213, 0.12);
+  --bg-hover:       rgba(174, 236, 213, 0.15);
   --bg-subtle:      #FFFFFF;
 
-  --text-primary:   #1A1A17;
-  --text-secondary: #6E6D6A;
-  --text-muted:     #908F8C;
-  --text-faint:     #C2C1BD;
+  --text-primary:   #1A201E;
+  --text-secondary: #5A6561;
+  --text-muted:     #808D89;
+  --text-faint:     #B5C4C0;
 
-  --border:         #E5E5E2;
-  --border-subtle:  #ECECE9;
-  --border-mid:     #E5E5E2;
+  --border:         #DCE6E2;
+  --border-subtle:  #E9F2EE;
+  --border-mid:     #DCE6E2;
 
-  --shadow-card:    0 2px 10px rgba(0, 0, 0, 0.03);
-  --shadow-sm:      0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-card:    0 2px 10px rgba(26, 32, 30, 0.03);
+  --shadow-sm:      0 1px 3px rgba(26, 32, 30, 0.02);
 
   --glass-bg:       #FFFFFF;
   --glass-panel:    #FFFFFF;
-  --input-ring:     rgba(174, 236, 213, 0.22);
+  --input-ring:     rgba(174, 236, 213, 0.25);
   --input-border-focus: #aeecd5;
 
-  --scrollbar-thumb: rgba(0, 0, 0, 0.10);
-  --scrollbar-hover: rgba(0, 0, 0, 0.18);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.08);
+  --scrollbar-hover: rgba(0, 0, 0, 0.16);
+}
+
+[data-theme="dark"] {
+  --bg-base:        #070A0E; /* Deep Charcoal Teal Dark Theme Canvas */
+  --bg-base-2:      #0A0F14;
+  --bg-panel:       rgba(10, 15, 20, 0.95);
+  --bg-card:        rgba(10, 15, 20, 0.65);
+  --bg-card-solid:  #0E141B;
+  --bg-input:       #121820;
+  --bg-input-focus: #0A0F14;
+  --bg-hover:       rgba(174, 236, 213, 0.08);
+  --bg-subtle:      #070A0E;
+
+  --text-primary:   #E5EBF1;
+  --text-secondary: #909EA8;
+  --text-muted:     #606E78;
+  --text-faint:     #38444E;
+
+  --border:         rgba(255, 255, 255, 0.05);
+  --border-subtle:  rgba(255, 255, 255, 0.03);
+  --border-mid:     rgba(255, 255, 255, 0.08);
+
+  --shadow-card:    0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-sm:      0 2px 8px rgba(0, 0, 0, 0.2);
+
+  --glass-bg:       #0A0F14;
+  --glass-panel:    #0E141B;
+  --input-ring:     rgba(174, 236, 213, 0.15);
+  --input-border-focus: #aeecd5;
+
+  --scrollbar-thumb: rgba(255, 255, 255, 0.08);
+  --scrollbar-hover: rgba(255, 255, 255, 0.16);
 }
 
 /* ─── Global Base ───────────────────────────────────────────────────────────── */
@@ -172,8 +203,53 @@ body {
 .bg-slate-950\/30 { background-color: rgba(0, 0, 0, 0.08) !important; }
 .bg-slate-950\/40 { background-color: rgba(0, 0, 0, 0.10) !important; }
 .bg-slate-950\/45 { background-color: rgba(0, 0, 0, 0.12) !important; }
-.bg-slate-950\/60 { background-color: var(--bg-subtle) !important; }
-.bg-slate-950\/80 { background-color: var(--bg-subtle) !important; }
+/* ─── Premium Modal Enter Animations ───────────────────────── */
+@keyframes modal-backdrop-enter {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes modal-card-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.bg-slate-950\/60,
+.bg-slate-950\2f 60,
+.fixed[class*="bg-slate-950/60"] {
+  background-color: rgba(15, 23, 42, 0.35) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  animation: modal-backdrop-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.bg-slate-950\/80,
+.bg-slate-950\2f 80,
+.fixed[class*="bg-slate-950/80"] {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  animation: modal-backdrop-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Animate child card container when the modal appears */
+.fixed[class*="bg-slate-950/80"] > div,
+.fixed[class*="bg-slate-950/60"] > div {
+  animation: modal-card-enter 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 .bg-slate-900    { background-color: var(--bg-input) !important; }
 .bg-slate-900\/20 { background-color: rgba(0, 0, 0, 0.04) !important; }
 .bg-slate-900\/30 { background-color: rgba(0, 0, 0, 0.06) !important; }
@@ -423,5 +499,36 @@ aside, main, header, nav, thead, tbody, tr, td, th {
   display: flex;
   animation: marquee 35s linear infinite;
   width: max-content;
+}
+
+/* ─── Global Font-Size Readability Overrides ────────────────── */
+.text-\[8px\] {
+  font-size: 10.5px !important;
+  letter-spacing: 0.05em !important;
+}
+.text-\[9px\] {
+  font-size: 11.5px !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+.text-\[10px\] {
+  font-size: 12.5px !important;
+  letter-spacing: 0.02em !important;
+}
+.text-xs {
+  font-size: 13.5px !important;
+}
+.text-sm {
+  font-size: 14.5px !important;
+}
+
+/* Adjust button/action icons scaling optically */
+svg.w-3.h-3, svg.w-3\.5, svg.w-3\.5.h-3\.5 {
+  width: 15px !important;
+  height: 15px !important;
+}
+svg.w-4, svg.w-4.h-4 {
+  width: 17px !important;
+  height: 17px !important;
 }
 

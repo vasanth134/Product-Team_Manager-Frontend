@@ -2,11 +2,11 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useTeam } from '../context/TeamContext';
 import { useAuth } from '../context/AuthContext';
 import { ChatProvider, useChat } from '../context/ChatContext';
-import type { Attachment, Notification } from '../context/ChatContext';
+import type { Attachment } from '../context/ChatContext';
 import {
   Send, Paperclip, Mic, MicOff, Video, VideoOff, Phone, PhoneOff,
   PhoneCall, StopCircle, Image as ImageIcon, Volume2, WifiOff, X,
-  Minimize2, Maximize2, MonitorUp, Bell, Plus, Hash, MessageSquare
+  Minimize2, Maximize2, MonitorUp, Plus, Hash, MessageSquare
 } from 'lucide-react';
 
 const RemoteVideoPlayer: React.FC<{ stream: MediaStream; className?: string }> = ({ stream, className = "w-full h-full object-cover" }) => {
@@ -742,12 +742,12 @@ const MessageBubble: React.FC<{ msg: any; isOwn: boolean }> = ({ msg, isOwn }) =
 // ─── Chat Inner (uses ChatContext) ────────────────────────────────────────────
 const ChatInner: React.FC = () => {
   const { user } = useAuth();
-  const { activeTeam, setActiveTeam, teams } = useTeam();
+  const { activeTeam } = useTeam();
   const {
     messages, typingUsers, connected, uploading,
     sendMessage, uploadFile, emitTypingStart, emitTypingStop,
-    startCall, inCall, joinActiveCall, activeCallStatus,
-    channels, activeChannel, notifications, selectChannel, createChannel, markNotificationRead, fetchNotifications
+    inCall, activeCallStatus,
+    channels, activeChannel, selectChannel, createChannel
   } = useChat();
 
   const [text, setText]               = useState('');
@@ -758,8 +758,7 @@ const ChatInner: React.FC = () => {
   const audioInputRef                 = useRef<HTMLInputElement>(null);
   const textareaRef                   = useRef<HTMLTextAreaElement>(null);
 
-  // Notifications dropdown state
-  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+
 
   // Create Channel Modal state
   const [showCreateChannelModal, setShowCreateChannelModal] = useState(false);
@@ -778,10 +777,7 @@ const ChatInner: React.FC = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Sync notifications on mount
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+
 
   const handleSend = useCallback(() => {
     if (!text.trim() && pendingAtt.length === 0) return;
@@ -895,21 +891,7 @@ const ChatInner: React.FC = () => {
     }
   };
 
-  const handleNotificationClick = async (notif: Notification) => {
-    await markNotificationRead([notif._id]);
-    if (notif.teamId && notif.teamId._id !== activeTeam?._id) {
-      const targetTeam = teams.find(t => t._id === notif.teamId._id);
-      if (targetTeam) {
-        setActiveTeam(targetTeam);
-        setTimeout(() => {
-          selectChannel(notif.channelId?._id || '');
-        }, 200);
-      }
-    } else if (notif.channelId) {
-      selectChannel(notif.channelId._id);
-    }
-    setShowNotificationsDropdown(false);
-  };
+
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -981,96 +963,30 @@ const ChatInner: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Notifications Bell */}
-            <div className="relative">
-              <button
-                onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
-                className={`p-2 rounded-xl border border-transparent transition relative cursor-pointer ${
-                  showNotificationsDropdown ? 'text-white bg-slate-800' : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                }`}
-                title="Notifications"
-              >
-                <Bell className="w-4 h-4" />
-                {notifications.length > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-red-600 text-white text-[8px] font-black flex items-center justify-center px-1 animate-pulse">
-                    {notifications.length}
-                  </span>
-                )}
-              </button>
-
-              {/* Notifications Dropdown */}
-              {showNotificationsDropdown && (
-                <div className="absolute right-0 mt-2 w-80 rounded-xl bg-[#090D14] border border-slate-900 shadow-2xl z-30 py-2 backdrop-blur-xl max-h-96 overflow-y-auto">
-                  <div className="px-4 py-2 border-b border-slate-900/60 flex items-center justify-between">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Notifications ({notifications.length})</span>
-                    {notifications.length > 0 && (
-                      <button
-                        onClick={() => markNotificationRead()}
-                        className="text-[9px] font-black text-indigo-400 hover:underline cursor-pointer"
-                      >
-                        Clear All
-                      </button>
-                    )}
-                  </div>
-                  {notifications.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-slate-500 text-xs">
-                      No new notifications! 🎉
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-slate-900/50">
-                      {notifications.map(n => (
-                        <div
-                          key={n._id}
-                          onClick={() => handleNotificationClick(n)}
-                          className="px-4 py-3 hover:bg-indigo-950/10 transition cursor-pointer text-left space-y-1"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-200">{n.sender?.name}</span>
-                            <span className="text-[8px] text-slate-500">{new Date(n.createdAt).toLocaleDateString()}</span>
-                          </div>
-                          <p className="text-[10px] text-slate-400 truncate leading-relaxed">
-                            {n.text}
-                          </p>
-                          <div className="flex items-center gap-1.5 text-[8px] text-slate-500 font-semibold">
-                            <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-900">{n.teamId?.name}</span>
-                            {n.channelId && (
-                              <span className="bg-slate-950 px-1.5 py-0.5 rounded border border-slate-900">#{n.channelId?.name}</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
             {/* Call actions */}
-            <div className="flex items-center gap-1.5 border-l border-slate-900 pl-3">
+            <div className="flex items-center gap-1.5">
               {activeCallStatus && !inCall ? (
                 <button
-                  onClick={joinActiveCall}
-                  className="px-3.5 py-1.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold text-xs transition shadow-lg shadow-green-600/30 animate-pulse flex items-center gap-1.5 border border-green-500/20"
-                  title="Join Active Call"
+                  disabled={true}
+                  className="px-3.5 py-1.5 rounded-xl bg-green-600/50 text-white/50 font-semibold text-xs transition flex items-center gap-1.5 border border-green-500/10 cursor-not-allowed pointer-events-none"
+                  title="Join Active Call (Disabled)"
                 >
-                  <PhoneCall className="w-3.5 h-3.5 animate-bounce" />
+                  <PhoneCall className="w-3.5 h-3.5" />
                   <span>Join Call ({activeCallStatus.participants.length})</span>
                 </button>
               ) : (
                 <>
                   <button
-                    onClick={() => startCall('audio')}
-                    disabled={inCall}
-                    className="p-2 rounded-xl text-slate-400 hover:text-green-400 hover:bg-green-950/20 border border-transparent hover:border-green-800/50 transition disabled:opacity-40"
-                    title="Audio Call"
+                    disabled={true}
+                    className="p-2 rounded-xl text-slate-500 border border-transparent transition opacity-40 cursor-not-allowed pointer-events-none"
+                    title="Audio Call (Disabled)"
                   >
                     <Phone className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => startCall('video')}
-                    disabled={inCall}
-                    className="p-2 rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-indigo-950/20 border border-transparent hover:border-indigo-800/50 transition disabled:opacity-40"
-                    title="Video Call"
+                    disabled={true}
+                    className="p-2 rounded-xl text-slate-500 border border-transparent transition opacity-40 cursor-not-allowed pointer-events-none"
+                    title="Video Call (Disabled)"
                   >
                     <Video className="w-4 h-4" />
                   </button>

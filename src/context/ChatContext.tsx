@@ -5,6 +5,19 @@ import { soundManager } from '../utils/soundEffects';
 
 const SOCKET_URL = API_BASE_URL.replace('/api', '');
 
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 export interface Attachment {
   type: 'image' | 'audio';
   url: string;
@@ -131,6 +144,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
   const channelsRef = useRef<Channel[]>([]);
   channelsRef.current = channels;
   const pcsRef     = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const shownNotificationsRef = useRef<Set<string>>(new Set());
   const peerNamesRef = useRef<Record<string, string>>({});
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
@@ -345,14 +359,50 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     };
   }, [fetchNotifications]);
 
-  // Request browser Notification permission on mount
+  // Synchronize Web Push Notification subscription when user is authenticated
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'default') {
-        Notification.requestPermission().catch(console.error);
+    if (!user) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    const subscribeUserToPush = async () => {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        
+        let subscription = await registration.pushManager.getSubscription();
+        
+        if (!subscription) {
+          const publicKey = urlBase64ToUint8Array('BAbNTTfAcDHiT-kOZrztPNjyA2wFSECS0JSh09DHMLrcUYNuIzWxp1kLitdBgScNd3IxffHnAboz8WMFkR2Db6I');
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: publicKey
+          });
+        }
+
+        const token = localStorage.getItem('token');
+        await fetch(`${API_BASE_URL}/chat/notifications/subscribe`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ subscription })
+        });
+        console.log('[Push] Subscription synchronized successfully.');
+      } catch (err) {
+        console.error('[Push] Failed to register subscription:', err);
       }
+    };
+
+    if (Notification.permission === 'granted') {
+      subscribeUserToPush();
+    } else if (Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          subscribeUserToPush();
+        }
+      }).catch(console.error);
     }
-  }, []);
+  }, [user]);
 
   // ── Socket connection ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -371,13 +421,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode; teamId: string 
     socket.on('disconnect', () => setConnected(false));
 
     socket.on('new_message', (msg: ChatMessage) => {
-      // Trigger HTML5 system notification if sender is not the current user
+      const isActiveChannel = activeChannelRef.current && activeChannelRef.current._id === msg.channelId;
+      const isWindowVisible = document.visibilityState === 'visible';
+
+      // Trigger HTML5 system notification if sender is not the current user,
+      // and either the window is in the background, or the user is not actively viewing the channel (e.g. they are in another workspace or channel)
       if (
         typeof window !== 'undefined' &&
         'Notification' in window &&
         Notification.permission === 'granted' &&
-        msg.sender?._id !== user?.id
+        msg.sender?._id !== user?.id &&
+        (!isWindowVisible || !isActiveChannel) &&
+        !shownNotificationsRef.current.has(msg._id)
       ) {
+        shownNotificationsRef.current.add(msg._id);
         const channelName = channelsRef.current.find(c => c._id === msg.channelId)?.name || 'General';
         new Notification(`New message in #${channelName}`, {
           body: `${msg.sender?.name || 'Someone'}: ${msg.text || 'Sent an attachment'}`,

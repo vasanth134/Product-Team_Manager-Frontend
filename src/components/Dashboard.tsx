@@ -99,14 +99,14 @@ export const Dashboard: React.FC = () => {
         
         {/* Card 1: Completion rate */}
         <div className="glass-card p-4 sm:p-5 rounded-xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ease-out flex-shrink-0 w-[260px] snap-start sm:w-auto">
-          <div className="absolute top-0 left-0 w-[3px] h-full bg-emerald-500/80"></div>
-          <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-emerald-500/10 transition duration-300"></div>
+          <div className="absolute top-0 left-0 w-[3px] h-full bg-[#aeecd5]"></div>
+          <div className="absolute top-0 right-0 w-20 h-20 bg-[#aeecd5]/5 rounded-full blur-xl pointer-events-none group-hover:bg-[#aeecd5]/10 transition duration-300"></div>
           <div className="flex justify-between items-start">
             <div className="space-y-0.5">
               <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest block">Completion Rate</span>
               <h3 className="text-2xl font-black text-white font-display tracking-tight tabular-nums sm:text-3xl">{summary.completionRate}%</h3>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:rotate-6 transition duration-300 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#aeecd5]/15 border border-[#aeecd5]/30 flex items-center justify-center text-[#1F523B] group-hover:rotate-6 transition duration-300 flex-shrink-0">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
@@ -118,14 +118,14 @@ export const Dashboard: React.FC = () => {
 
         {/* Card 2: Sprint Velocity */}
         <div className="glass-card p-4 sm:p-5 rounded-xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ease-out flex-shrink-0 w-[260px] snap-start sm:w-auto">
-          <div className="absolute top-0 left-0 w-[3px] h-full bg-indigo-500/80"></div>
-          <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-indigo-550/10 transition duration-300"></div>
+          <div className="absolute top-0 left-0 w-[3px] h-full bg-[#aeecd5]"></div>
+          <div className="absolute top-0 right-0 w-20 h-20 bg-[#aeecd5]/5 rounded-full blur-xl pointer-events-none group-hover:bg-[#aeecd5]/10 transition duration-300"></div>
           <div className="flex justify-between items-start">
             <div className="space-y-0.5">
               <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest block">Delivered Points</span>
               <h3 className="text-2xl font-black text-white font-display tracking-tight tabular-nums sm:text-3xl">{summary.pointsCompletionRate}%</h3>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-550/20 flex items-center justify-center text-indigo-400 group-hover:rotate-6 transition duration-300 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#aeecd5]/15 border border-[#aeecd5]/30 flex items-center justify-center text-[#1F523B] group-hover:rotate-6 transition duration-300 flex-shrink-0">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
@@ -137,8 +137,8 @@ export const Dashboard: React.FC = () => {
 
         {/* Card 3: Active Roadmaps */}
         <div className="glass-card p-4 sm:p-5 rounded-xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ease-out flex-shrink-0 w-[260px] snap-start sm:w-auto">
-          <div className="absolute top-0 left-0 w-[3px] h-full bg-amber-500/80"></div>
-          <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-amber-550/10 transition duration-300"></div>
+          <div className="absolute top-0 left-0 w-[3px] h-full bg-[var(--border)]"></div>
+          <div className="absolute top-0 right-0 w-20 h-20 bg-[var(--border-subtle)] rounded-full blur-xl pointer-events-none group-hover:bg-[var(--border)]/10 transition duration-300"></div>
           <div className="flex justify-between items-start">
             <div className="space-y-0.5">
               <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest block">Active Milestones</span>
@@ -146,7 +146,7 @@ export const Dashboard: React.FC = () => {
                 {milestones.filter(m => m.status === 'active').length}
               </h3>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-550/20 flex items-center justify-center text-amber-400 group-hover:rotate-6 transition duration-300 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[var(--bg-input)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] group-hover:rotate-6 transition duration-300 flex-shrink-0">
               <FolderGit2 className="w-4 h-4" />
             </div>
           </div>
@@ -158,8 +158,8 @@ export const Dashboard: React.FC = () => {
 
         {/* Card 4: High Priority Alert */}
         <div className="glass-card p-4 sm:p-5 rounded-xl relative overflow-hidden group hover:-translate-y-1 transition-all duration-300 ease-out flex-shrink-0 w-[260px] snap-start sm:w-auto">
-          <div className="absolute top-0 left-0 w-[3px] h-full bg-red-500/80"></div>
-          <div className="absolute top-0 right-0 w-20 h-20 bg-red-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-red-550/10 transition duration-300"></div>
+          <div className="absolute top-0 left-0 w-[3px] h-full bg-[#9F2F2D]"></div>
+          <div className="absolute top-0 right-0 w-20 h-20 bg-[#FDEBEC]/40 rounded-full blur-xl pointer-events-none group-hover:bg-[#FDEBEC]/65 transition duration-300"></div>
           <div className="flex justify-between items-start">
             <div className="space-y-0.5">
               <span className="text-[9px] font-bold text-slate-550 uppercase tracking-widest block">Blocked Risk Items</span>
@@ -167,7 +167,7 @@ export const Dashboard: React.FC = () => {
                 {priorityCounts.critical + priorityCounts.high}
               </h3>
             </div>
-            <div className="w-8 h-8 rounded-lg bg-red-500/10 border border-red-550/25 flex items-center justify-center text-red-400 group-hover:rotate-6 transition duration-300 flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#FDEBEC] border border-red-200/50 flex items-center justify-center text-[#9F2F2D] group-hover:rotate-6 transition duration-300 flex-shrink-0">
               <AlertTriangle className="w-4.5 h-4.5" />
             </div>
           </div>
